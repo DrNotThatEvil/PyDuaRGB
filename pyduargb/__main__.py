@@ -14,5 +14,5 @@ if __name__ == "__main__":
     chipstr = configsys.get_option('main', 'chiptype')
     chip = chips.CHIP_LOOKUP[chipstr.upper()]()
 
-    rgbcntl = rgbcontroller.RGBController(chip, 50, '/dev/null')
+    rgbcntl = rgbcontroller.RGBController(chip, 50, configsys.get_option('main', 'spidev'))
     rgbcntl.play_animation(1000, pulse.Pulse({'r': 255, 'g':0, 'b':0}))
