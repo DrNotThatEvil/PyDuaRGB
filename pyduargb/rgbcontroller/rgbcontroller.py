@@ -21,3 +21,4 @@ class RGBController(Singleton):
         for i in range(duration):
             pixels = animation.animate_ns(i, duration, self.ledcount)
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
+            sleep(step)
