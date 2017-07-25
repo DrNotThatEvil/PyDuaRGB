@@ -44,6 +44,7 @@ class LPD6803(BaseChip):
             pixel_out_bytes[1] = (pixel_out & 0x00FF) >> 0
             out.write(pixel_out_bytes)
         out.write(bytearray(int(math.ceil(len(pixels) / 8 + 1))))
+        out.flush()
         return
 
 class LPD8806(BaseChip):
@@ -87,4 +88,5 @@ class LPD8806(BaseChip):
         
         out.write(pixel_out)
         out.write(bytearray([0 for x in range(self.PIXEL_SIZE+1)]))
+        out.flush()
         return
