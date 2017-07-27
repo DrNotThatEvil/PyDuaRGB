@@ -35,7 +35,9 @@ if __name__ == "__main__":
     qi = queueitem.QueueItem(1000, animation, 10, True, False)
     queue.add_queueitem(qi)
 
-    time.sleep(5)
+    
+    time.sleep(15)
+    print("Stopping animation test...")
 
     animation_thread.stop()
 
