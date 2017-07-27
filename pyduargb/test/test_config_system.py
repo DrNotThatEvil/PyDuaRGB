@@ -3,6 +3,7 @@ import os
 import pytest
 
 from ..config import config_system
+from ..config.types import *
 
 TEST_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -56,4 +57,18 @@ def test_validate_inccorrect_values_backup():
     except Exception as e:
         if e.message == "Could not load config.":
             pytest.fail("Could not load incorrect3.in config with backupable values.")
+
+@pytest.mark.parametrize("section,option,conftype", [
+    ('main', 'spidev', ConfigFileType),
+    ('main', 'rgbmap', RGBMapConfigType),
+    ('main', 'leds', ConfigIntType),
+    ('main', 'chiptype', ConfigChipType),
+    ('slaves', 'count', ConfigIntType), 
+    ('master', 'allow', ConfigIpType),
+    ('master', 'slavekey', ConfigStringType),
+])
+def test_configtypes(section, option, conftype):
+    configsys = config_system.ConfigSystem(os.path.join(TEST_PATH, 'correct.ini'))
+    assert isinstance(configsys.get_option(section, option), conftype) == True
+    config_system.ConfigSystem.destroy()
 

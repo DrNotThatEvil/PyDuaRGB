@@ -31,4 +31,5 @@ class SM16716(BaseChip):
             pixel_out[out_index:(out_index+self.PIXEL_SIZE)] = pixel_in
 
         out.write(bytearray([0 for x in range(50)]) + pixel_out)
+        out.flush()
         return

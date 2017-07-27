@@ -88,7 +88,7 @@ class ConfigSystem(Singleton):
                 continue
 
             for key, value in CONFIG_TYPES[section]:
-                config_type = value()
+                config_type = value
 
                 if(not key in self.main_config.options(section)):
                     continue
@@ -121,7 +121,7 @@ class ConfigSystem(Singleton):
         if(not self.main_config.has_option('slaves', 'count')):
             return False
 
-        config_type = ConfigIntType()
+        config_type = ConfigIntType
         if(not config_type.validate(self.main_config.get("slaves", "count"))):
             logger.warn("slave count invalid, No slaves will be loaded.")
             return False
@@ -143,13 +143,13 @@ class ConfigSystem(Singleton):
                 logger.warning("Slave{0} port not configured skipping slave.".format(i))
                 continue
 
-            ipType = ConfigIpType()
+            ipType = ConfigIpType
             ip = self.main_config.get(section, 'ip')
             if(not ipType.validate(self.main_config.get(section, 'ip'))):
                 logger.warning("Slave{0} ip not a ip skipping slave.".format(i))
                 continue
             
-            inttype = ConfigIntType()
+            inttype = ConfigIntType
             port = self.main_config.get(section, 'port')
             if(not inttype.validate(self.main_config.get(section, 'port'))):
                 logger.warning("Slave{0} port not a int skipping slave.".format(i))
@@ -180,5 +180,10 @@ class ConfigSystem(Singleton):
         
                 logger.info("Trying to load from {0} config...".format(config_names[x+1]))
                 continue
+
+            if(section in CONFIG_TYPES):
+                for config_type in CONFIG_TYPES[section]:
+                    if(config_type[0] == option):
+                        return config_type[1](configs[x].get(section, option))
 
             return configs[x].get(section, option)

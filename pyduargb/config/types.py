@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 import os, socket
 
-from ..chips import ALL_CHIPS
+from ..chips import ALL_CHIPS, CHIP_LOOKUP
 
 CONFIG_TYPES = []
 
@@ -12,45 +12,81 @@ class BaseConfigType():
     def init(self):
         pass
 
-    def validate(self, data):
+    @staticmethod
+    def validate(data):
         return True
 
-    def get_help_string(self):
+    @staticmethod
+    def get_help_string():
         return False
 
 class ConfigFileType(BaseConfigType):
-    def validate(self, data):
+    def __init__(self, value):
+        self.string_rep = value
+        self.full_path = os.path.abspath(value)
+
+    def get_str_value(self):
+        return self.string_rep
+
+    def get_full_path(self):
+        return self.full_path
+
+    @staticmethod
+    def validate(data):
         return os.path.isabs(data)
 
-    def get_type_name(self):
+    @staticmethod
+    def get_type_name():
         return "File"
 
-class ConfigStringType(BaseConfigType):
-    def validate(self, data):
+class ConfigStringType(BaseConfigType): 
+    def __init__(self, value):
+        self.value = value
+
+    def get_value(self):
+        return self.value
+
+    @staticmethod
+    def validate(data):
         anythingElse = False
         for configtype in ALL_CONFIG_TYPES:
             if configtype == ConfigStringType:
                 continue
 
-            configtype_instance = configtype()
-            if(configtype_instance.validate(data)):
+            if(configtype.validate(data)):
                 anythingElse = True
                 break
 
         return (isinstance(data, str) and not anythingElse)
 
-    def get_type_name(self):
+    @staticmethod
+    def get_type_name():
         return "String"
 
 class ConfigIntType(BaseConfigType):
-    def validate(self, data):
+    def __init__(self, value):
+        self.value = value
+
+    def get_value(self):
+        return self.value
+
+    @staticmethod
+    def validate(data):
         return data.isdigit()
 
-    def get_type_name(self):
+    @staticmethod
+    def get_type_name():
         return "int"
 
 class RGBMapConfigType(BaseConfigType):
-    def validate(self, data):
+    def __init__(self, value):
+        self.value = value.lower()
+
+    def get_value(self):
+        return self.value
+
+    @staticmethod
+    def validate(data):
         if(len(data) != 3):
             return False
 
@@ -60,32 +96,54 @@ class RGBMapConfigType(BaseConfigType):
             return False
 
         return True
-    
-    def get_type_name(self):
+   
+    @staticmethod
+    def get_type_name():
         return "RGBMap"
 
 class ConfigIpType(BaseConfigType):
-    def validate(self, data):
+    def __init__(self, value):
+        self.value = value
+
+    def get_value(self):
+        return self.value
+    
+    @staticmethod
+    def validate(data):
         try:
             socket.inet_aton(data)
             return True
         except Exception as e:
             return False
 
-    def get_type_name(self):
+    @staticmethod
+    def get_type_name():
         return "ip"
 
 class ConfigChipType(BaseConfigType):
-    def validate(self, data):
+    def __init__(self, value):
+        self.string_rep = value.upper()
+        
+    
+    def get_str_value(self):
+        return self.string_rep
+
+    def get_chip_obj(self):
+        return CHIP_LOOKUP[self.string_rep]()
+
+    @staticmethod
+    def validate(data):
         for chip in ALL_CHIPS:
             if chip.lower() == data.lower():
                 return True
         return False
 
-    def get_type_name(self):
+    @staticmethod
+    def get_type_name():
         return "chip"
 
-    def get_help_string(self):
+    @staticmethod
+    def get_help_string():
         helpstr = "Valid options are: "
         for key in range(len(ALL_CHIPS)):
             chip = ALL_CHIPS[key]

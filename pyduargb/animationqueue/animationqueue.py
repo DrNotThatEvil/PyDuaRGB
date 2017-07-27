@@ -3,7 +3,7 @@ from __future__ import print_function, absolute_import
 from .queueitem import *
 from ..meta import Singleton
 
-class Queue(Singleton):
+class AnimationQueue(Singleton):
     def __init__(self):
         self._queue = []
 
@@ -32,9 +32,16 @@ class Queue(Singleton):
         self._queue.append(queueitem)
         return True
 
+    def perform_task(self):
+        if(len(self._queue) == 0):
+            return
+
+        queueitem = self._queue[0]
+        queueitem.perform_task()
+
     def item_done(self):
+        if(len(self._queue) == 0):
+            return
+
         if(not self._should_item_stick()):
-            self._queue.pop()
-        
-        if(len(self._queue) > 0):
-            self._queue[(len(self._queue)-1)].perform_task()
+            self._queue.pop(0)
