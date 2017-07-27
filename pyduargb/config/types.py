@@ -68,7 +68,7 @@ class ConfigIntType(BaseConfigType):
         self.value = value
 
     def get_value(self):
-        return self.value
+        return int(self.value)
 
     @staticmethod
     def validate(data):

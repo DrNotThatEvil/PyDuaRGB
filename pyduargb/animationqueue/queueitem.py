@@ -1,13 +1,18 @@
 from __future__ import print_function, absolute_import
 
 from .animationqueue import *
+from ..rgbcontroller.rgbcontroller import *
 
 class QueueItem(object):
-    def __init__(self, animation, runlevel, sticky=False, allow_lower_runlevel=False):
+    def __init__(self, duration, animation, runlevel, sticky=False, allow_lower_runlevel=False):
+        self.duration = duration
         self.animation = animation
         self.runlevel = runlevel
         self.sticky = sticky
         self.allow_lower_runlevel = allow_lower_runlevel 
+
+    def get_duration(self):
+        return self.animation
 
     def get_animation(self):
         return self.animation
@@ -34,4 +39,4 @@ class QueueItem(object):
         rgbcntl = RGBController()
         # rgb controller is a singleton
         # this is so i don't have to keep passing classes around
-        rgbcntl.play_animation(self.animation)
+        rgbcntl.play_animation(self.duration, self.animation)
