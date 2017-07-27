@@ -8,6 +8,7 @@ from . import chips
 from .rgbcontroller import rgbcontroller
 from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
+from .animationqueue import *
 
 MAIN_CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
@@ -29,7 +30,10 @@ if __name__ == "__main__":
     
     animation_thread.start()
 
-    pulse.Pulse({'r': 255, 'g': 255, 'b': 255})
+    animation = pulse.Pulse({'r': 255, 'g': 255, 'b': 255})
+    queue = animationqueue.AnimationQueue()
+    qi = QueueItem(animation, 10, True, False)
+    queue.add_queueitem(qi)
 
     time.sleep(5)
 
