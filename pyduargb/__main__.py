@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     animation = pulse.Pulse({'r': 255, 'g': 255, 'b': 255})
     queue = animationqueue.AnimationQueue()
-    qi = QueueItem(animation, 10, True, False)
+    qi = queueitem.QueueItem(animation, 10, True, False)
     queue.add_queueitem(qi)
 
     time.sleep(5)
