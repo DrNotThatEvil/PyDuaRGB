@@ -24,6 +24,11 @@ CONFIG_TYPES  = {
         ['leds', ConfigIntType],
         ['chiptype', ConfigChipType]
     ],
+    'jsonrpc': [
+        ['allow', ConfigIpType],
+        ['port', ConfigIntType],
+        ['apikey', ConfigStringType]
+    ],
     'slaves': [
         ['count', ConfigIntType] 
     ],

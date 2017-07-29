@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from time import sleep
+import time
 
 from ..logging import *
 from ..meta import Singleton
@@ -19,6 +19,10 @@ class RGBController(Singleton):
     def play_animation(self, duration, animation, step=0.001):
         #TODO implement slave led amount into playing the animation.
         for i in range(duration):
+            time1 = time.time()
             pixels = animation.animate_ns(i, duration, self.ledcount)
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
-            # TODO Make wait time dynamic so the exact stepsize is achived
+            time2 = time.time()
+            delta = (time2 - time1)
+            if(delta < step):
+                time.sleep((step-delta))
