@@ -15,6 +15,10 @@ class Jirate(object):
         # animation takes 0.40 of the duration to fade in and out. The time in the middle 
         # the ledstrip will take to display the color statically
 
+        
+        percent = i / duration
+        step = (1 / 0.10)
+
         brightness = 1.0
         ledbrightness = list()
         for x in range(ledcount):
@@ -27,10 +31,10 @@ class Jirate(object):
             ledbrightness.append(brightness)
         
         deque_brightness = deque(ledbrightness)
-        shift = i % ledcount
+        shift = math.floor(i*0.10) % ledcount
         deque_brightness.rotate(shift)
       
-        print("{}: {}".format(i, deque_brightness))
+        print("{}: {} percent: {}. Step {}".format(i, deque_brightness, percent, step))
 
         return [Pixel(self.color, x) for x in deque_brightness]
 
