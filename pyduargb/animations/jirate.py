@@ -40,7 +40,7 @@ class Jirate(object):
         return [Pixel(self.color, x) for x in deque_brightness]
 
     def to_json(self):
-        return {"name": "jirate", "color": self.color}
+        return {"name": "jirate", "color": self.color, "low": self.low, "bright": self.bright, "timedelay": self.timedelay}
 
     @staticmethod
     def from_json(obj):
