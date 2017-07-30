@@ -7,8 +7,10 @@ from pyduargb.pixel import Pixel
 
 class Jirate(object):
 
-    def __init__(self, color):
+    def __init__(self, color, low=0.25, bright=1.0):
         self.color = color
+        self.low = low
+        self.bright = bright
 
     def animate_ns(self, i, duration, ledcount):
         # animation pulses a single color 
@@ -23,15 +25,16 @@ class Jirate(object):
         ledbrightness = list()
         for x in range(ledcount):
             if ((x % 4) == 0):
-                if(brightness == 1):
-                    brightness = 0.5
-                elif(brightness == 0.5):
-                    brightness = 1
+                if(brightness == self.bright):
+                    brightness = self.low
+                elif(brightness == self.low):
+                    brightness = self.bright
 
             ledbrightness.append(brightness)
         
         deque_brightness = deque(ledbrightness)
         shift = math.floor(i*0.10) % ledcount
+        #TODO make 0.10 a variable?
         deque_brightness.rotate(shift)
       
         print("{}: {} percent: {}. Step {}".format(i, deque_brightness, percent, step))
@@ -43,4 +46,4 @@ class Jirate(object):
 
     @staticmethod
     def from_json(obj):
-        return Jirate(obj["color"])
+        return Jirate(obj["color"], obj["low"], obj["bright"])
