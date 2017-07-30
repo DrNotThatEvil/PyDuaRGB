@@ -45,3 +45,9 @@ class AnimationQueue(Singleton):
 
         if(not self._should_item_stick()):
             self._queue.pop(0)
+
+    def get_json_queue(self):
+        qi_list = []
+        for qi in range(len(self._queue)):
+            qi_list.append(self._queue[qi].to_json())
+        return qi_list

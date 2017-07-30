@@ -40,3 +40,13 @@ class QueueItem(object):
         # rgb controller is a singleton
         # this is so i don't have to keep passing classes around
         rgbcntl.play_animation(self.duration, self.animation)
+
+    def to_json(self):
+        return {
+            "duration": self.duration,
+            "animation": self.animation.to_json(),
+            "runlevel": self.runlevel,
+            "sticky": self.sticky,
+            "allow_lower_runlevel": self.allow_lower_runlevel
+        }
+
