@@ -1,0 +1,10 @@
+[Unit]
+Description=pyduargb the daemon for your ledstrip
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/python3 PATH_TO_PYDUARGB
+
+[Install]
+WantedBy=multi-user.target

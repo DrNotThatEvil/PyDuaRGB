@@ -46,11 +46,6 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
     return qi.to_json()
 
 
-@dispatcher.add_method
-def foobar(**kwargs):
-    return kwargs["foo"] + kwargs["bar"]
-
-
 @Request.application
 def application(request):
     # Handle api token
