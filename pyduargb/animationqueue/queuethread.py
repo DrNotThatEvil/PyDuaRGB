@@ -27,7 +27,4 @@ class AnimationQueueThread(threading.Thread):
             # At this point the tread has the Lock.
             # And can run animations on the AnimationQueue.
     
-            print("Test") 
-            print("Test.")
-            print("Test..")
             self.animation_lock.release()
