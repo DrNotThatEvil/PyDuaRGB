@@ -40,11 +40,7 @@ class QueueItem(object):
         rgbcntl = RGBController()
         # rgb controller is a singleton
         # this is so i don't have to keep passing classes around
-        a = datetime.datetime.now()
         rgbcntl.play_animation(self.duration, self.animation)
-        b = datetime.datetime.now()
-        c = b - a
-        print(c.microseconds)
 
     def to_json(self):
         return {
