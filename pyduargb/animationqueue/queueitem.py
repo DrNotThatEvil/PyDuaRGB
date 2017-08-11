@@ -43,7 +43,7 @@ class QueueItem(object):
         a = datetime.datetime.now()
         rgbcntl.play_animation(self.duration, self.animation)
         b = datetime.datetime.now()
-        c = b - c
+        c = b - a
         print(c.microseconds)
 
     def to_json(self):
