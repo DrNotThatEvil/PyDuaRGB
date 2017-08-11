@@ -28,5 +28,5 @@ class RGBController(Singleton):
             delta = end - start
             step_micro = step * 1000
             if(delta.microseconds < step_micro):
-                delay = ((step_micro - delta.microseconds) / 1000000)
+                delay = (((step_micro - delta.microseconds)-100) / 1000000)
                 time.sleep(delay)
