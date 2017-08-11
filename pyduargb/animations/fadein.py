@@ -13,7 +13,6 @@ class Fadein(object):
         # the ledstrip will take to display the color statically
 
         brightness = i / duration
-        print(brightness)
 
         return [Pixel(self.color, brightness) for count in range(ledcount)]
 
