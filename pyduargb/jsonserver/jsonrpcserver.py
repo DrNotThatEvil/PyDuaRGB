@@ -49,7 +49,7 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
 @Request.application
 def application(request):
     # Handle api token
-    print(request)
+    # TODO BUILD API TOKEN VERIFICATION.
 
     response = JSONRPCResponseManager.handle(
         request.data, dispatcher)
