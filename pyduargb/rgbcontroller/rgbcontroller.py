@@ -1,5 +1,7 @@
 from __future__ import print_function, absolute_import
 import time
+import datetime
+import math
 
 from ..logging import *
 from ..meta import Singleton
@@ -16,13 +18,15 @@ class RGBController(Singleton):
         logger.info("RGBController intitalized.")
         logger.debug("RGBController chiptype: {}".format(chip.get_chipname()))
     
-    def play_animation(self, duration, animation, step=0.001):
+    def play_animation(self, duration, animation, step=1):
         #TODO implement slave led amount into playing the animation.
         for i in range(duration):
-            time1 = time.time()
+            start = datetime.datetime.now()
             pixels = animation.animate_ns(i, duration, self.ledcount)
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
-            time2 = time.time()
-            delta = (time2 - time1)
-            if(delta < step):
-                time.sleep((step-delta))
+            end = datetime.datetime.now()
+            delta = end - start
+            step_micro = step * 1000
+            if(delta.microseconds < step_micro):
+                delay = ((step_micro - delta.microseconds) / 1000000)
+                time.sleep(delay)
