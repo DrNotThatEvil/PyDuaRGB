@@ -20,7 +20,7 @@ from .jsonserver.jsonrpcserver import *
 MAIN_CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
 
-def main(): 
+def main():
     #TODO implement logging in to __main__
 
     # Gathering config options.
@@ -28,13 +28,15 @@ def main():
     chipconfig = configsys.get_option('main', 'chiptype')
     leds = configsys.get_option('main', 'leds')
     spidev = configsys.get_option('main', 'spidev')
+    rgbmap = configsys.get_option('main', 'rgbmap')
 
     #TODO implement checking of all gathered config values
-   
+
     # Setup RGBController
     rgbcntl = rgbcontroller.RGBController(chipconfig.get_chip_obj(),
         leds.get_value(),
-        spidev.get_str_value()
+        spidev.get_str_value(),
+        rgbmap.get_value()
     )
 
     # Setup AnimationQueue
@@ -50,7 +52,7 @@ def main():
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Setup json rpc system
     run_simple(configsys.get_option('jsonrpc', 'allow').get_value(),
         configsys.get_option('jsonrpc', 'port').get_value(),
