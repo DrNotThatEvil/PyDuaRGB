@@ -51,6 +51,9 @@ def application(request):
         forbidres.status = '403 Forbidden'
         return forbidres
 
+    # pop apitoken from the request data.
+    data.pop("apitoken")
+
     response = JSONRPCResponseManager.handle(
-        request.data, dispatcher)
+        json.dumps(data), dispatcher)
     return Response(response.json, mimetype='application/json')

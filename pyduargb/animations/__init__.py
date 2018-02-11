@@ -5,13 +5,15 @@ from .jirate import Jirate
 from .static import Static
 from .fadein import Fadein
 from .fadeout import Fadeout
+from .racer import Racer
 
 ALL_ANIMATIONS = [
    Pulse,
    Jirate,
    Static,
    Fadein,
-   Fadeout
+   Fadeout,
+   Racer
 ]
 
 ANIMATION_MAP = {
@@ -19,5 +21,6 @@ ANIMATION_MAP = {
     'jirate': Jirate,
     'static': Static,
     'fadein': Fadein,
-    'fadeout': Fadeout
+    'fadeout': Fadeout,
+    'racer': Racer,
 }

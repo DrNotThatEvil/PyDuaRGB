@@ -25,4 +25,4 @@ class Racer(object):
 
     @staticmethod
     def from_json(obj):
-        return Pulse(obj["color"])
+        return Racer(obj["color"])
