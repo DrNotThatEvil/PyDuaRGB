@@ -6,6 +6,7 @@ from .static import Static
 from .fadein import Fadein
 from .fadeout import Fadeout
 from .racer import Racer
+from .kitt import Kitt
 
 ALL_ANIMATIONS = [
    Pulse,
@@ -13,7 +14,8 @@ ALL_ANIMATIONS = [
    Static,
    Fadein,
    Fadeout,
-   Racer
+   Racer,
+   Kitt
 ]
 
 ANIMATION_MAP = {
@@ -23,4 +25,5 @@ ANIMATION_MAP = {
     'fadein': Fadein,
     'fadeout': Fadeout,
     'racer': Racer,
+    'Kitt': Kitt
 }
