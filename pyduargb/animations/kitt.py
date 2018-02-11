@@ -14,12 +14,8 @@ class Kitt(object):
         arr = []
         for count in range(ledcount):
             brightness = 0
-            if percent < 0.5:
-                if count >= (leader - 5) and count <= leader:
-                    brightness = 1.0
-            else:
-                if count <= (leader + 5) and count >= leader:
-                    brightness = 1.0
+            if count >= (leader - 5) and count <= leader:
+                brightness = 1.0
             arr.append(Pixel(self.color, brightness))
             
         return arr
