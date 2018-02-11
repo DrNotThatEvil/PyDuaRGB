@@ -11,10 +11,6 @@ class Kitt(object):
         percent = i / (duration*.5)
         leader = ceil((sin( percent * 2 ) * ledcount))
 
-        if(leader < 0):
-            print(i)
-            print(ledcount + leader)
-
         arr = []
         for count in range(ledcount):
             brightness = 0
