@@ -8,12 +8,20 @@ class Kitt(object):
         self.color = color
 
     def animate_ns(self, i, duration, ledcount):
-        percent = i / duration
-        leader = ceil(sin( percent * 2 ) * ledcount)
+        percent = i / (duration*.5)
+        leader = ceil((sin( percent * 2 ) * ledcount))
+
+        if(leader < 0):
+            print(i)
+            print(ledcount + leader)
 
         arr = []
         for count in range(ledcount):
             brightness = 0
+            if(leader < 0):
+                ableader = ledcount + leader
+                if count >= (ableader-5) and count <= ableader:
+                    brightness = 1.0
             if count >= (leader - 5) and count <= leader:
                 brightness = 1.0
             arr.append(Pixel(self.color, brightness))
