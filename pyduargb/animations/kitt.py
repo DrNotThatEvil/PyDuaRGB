@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from math import sin
+from math import sin,ceil
 from pyduargb.pixel import Pixel
 
 class Kitt(object):
@@ -9,15 +9,12 @@ class Kitt(object):
 
     def animate_ns(self, i, duration, ledcount):
         percent = i / duration
-        leader = sin( percent * 2 ) * ledcount
-
-        if( percent > 0.5 ):
-            leader = (1 - sin( percent * 2 )) * ledcount
+        leader = ceil(sin( percent * 2 ) * ledcount)
 
         arr = []
         for count in range(ledcount):
             brightness = 0
-            if percent < 1:
+            if percent < 0.5:
                 if count >= (leader - 5) and count <= leader:
                     brightness = 1.0
             else:

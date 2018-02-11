@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from math import sin
+from math import sin, ceil
 from pyduargb.pixel import Pixel
 
 class Racer(object):
@@ -9,7 +9,7 @@ class Racer(object):
 
     def animate_ns(self, i, duration, ledcount):
         percent = i / duration
-        leader = sin( percent ) * ledcount
+        leader = ceil(sin( percent ) * ledcount)
        
         arr = []
         for count in range(ledcount):
