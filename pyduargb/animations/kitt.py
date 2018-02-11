@@ -19,7 +19,7 @@ class Kitt(object):
                     brightness = 1.0
             else:
                 if count <= (leader + 5) and count >= leader:
-                    brightness = 01
+                    brightness = 1.0
             arr.append(Pixel(self.color, brightness))
             
         return arr
