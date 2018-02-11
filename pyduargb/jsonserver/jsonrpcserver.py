@@ -1,8 +1,8 @@
 from __future__ import print_function, absolute_import, unicode_literals
 import os
+import json
 from werkzeug.wrappers import Request, Response
 from jsonrpc import JSONRPCResponseManager, dispatcher
-
 
 from .jsonutils import *
 from ..config import config_system
@@ -10,11 +10,9 @@ from ..animationqueue import animationqueue
 from ..animations import pulse
 from ..animationqueue import animationqueue, queueitem
 
-
 CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_PATH = os.path.realpath(os.path.join(CUR_PATH, '..', '..'))
 CONFIGSYS = config_system.ConfigSystem(os.path.join(MAIN_PATH, 'config.ini'))
-
 
 # Queue Section
 @dispatcher.add_method
@@ -36,7 +34,6 @@ def get_current_queueitem():
 def get_led_count():
     return {"led_count": CONFIGSYS.get_option('main', 'leds').get_value()}
 
-
 # Queue manipulation section
 @dispatcher.add_method
 def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
@@ -45,11 +42,14 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
     animationqueue.AnimationQueue().add_queueitem(qi)
     return qi.to_json()
 
-
 @Request.application
 def application(request):
     # Handle api token
-    # TODO BUILD API TOKEN VERIFICATION.
+    data = json.loads(request.data.decode("utf-8"))
+    if(data["apitoken"] != CONFIGSYS.get_option('jsonrpc', 'apikey').get_value()):
+        forbidres = Response('403 Forbidden')
+        forbidres.status = '403 Forbidden'
+        return forbidres
 
     response = JSONRPCResponseManager.handle(
         request.data, dispatcher)
