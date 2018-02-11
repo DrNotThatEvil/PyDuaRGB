@@ -8,7 +8,7 @@ class Kitt(object):
         self.color = color
 
     def animate_ns(self, i, duration, ledcount):
-        percent = i / (duration * 0.5)
+        percent = i / (duration/2)
         leader = sin( percent ) * ledcount
        
         arr = []
