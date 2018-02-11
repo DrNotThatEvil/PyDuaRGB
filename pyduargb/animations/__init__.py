@@ -25,5 +25,5 @@ ANIMATION_MAP = {
     'fadein': Fadein,
     'fadeout': Fadeout,
     'racer': Racer,
-    'Kitt': Kitt
+    'kitt': Kitt
 }
