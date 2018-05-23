@@ -45,14 +45,12 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
 @Request.application
 def application(request):
     # Handle api token
-    data = json.loads(request.data.decode("utf-8"))
-    if(data["apitoken"] != CONFIGSYS.get_option('jsonrpc', 'apikey').get_value()):
-        forbidres = Response('403 Forbidden')
-        forbidres.status = '403 Forbidden'
-        return forbidres
+    if request.method != 'POST':
+        return Response('pyduargb led control', mimetype='text/plain')
 
-    # pop apitoken from the request data.
-    data.pop("apitoken")
+    data = json.loads(request.data.decode("utf-8"))
+    # NOTE: Removed apitoken. jsonrpc is only safe for local network anyway
+    # due to http making the apitoken useless.
 
     response = JSONRPCResponseManager.handle(
         json.dumps(data), dispatcher)

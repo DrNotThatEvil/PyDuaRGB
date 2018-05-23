@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 
 from .queueitem import *
+from ..logging import *
 from ..meta import Singleton
 
 class AnimationQueue(Singleton):
@@ -37,7 +38,9 @@ class AnimationQueue(Singleton):
             return
 
         queueitem = self._queue[0]
+        logger.info("Starting queueitem...")
         queueitem.perform_task()
+        logger.info("Finished queueitem...")
 
     def item_done(self):
         if(len(self._queue) == 0):

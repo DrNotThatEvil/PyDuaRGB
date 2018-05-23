@@ -13,7 +13,7 @@ class QueueItem(object):
         self.allow_lower_runlevel = allow_lower_runlevel 
 
     def get_duration(self):
-        return self.animation
+        return self.duration
 
     def get_animation(self):
         return self.animation
