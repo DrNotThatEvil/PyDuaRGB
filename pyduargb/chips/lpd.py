@@ -1,8 +1,12 @@
 from __future__ import print_function, absolute_import
 
+import sys
+import time
+import spidev
 import math
 from .base_chip import BaseChip
 
+CACHE_SIZE = 25000
 
 class LPD6803(BaseChip):
     """
@@ -11,14 +15,40 @@ class LPD6803(BaseChip):
 
     CHIP_NAME = "LPD6803"
     PIXEL_SIZE = 3
+    PIXEL_BYTES = 2
 
     def __init__(self):
         super().__init__()
         self.gamma = bytearray(256)
-        self.gamma_select = 1
+        self.gamma_select = 0
+        self.spi = spidev.SpiDev()
+        self._caching_enabled = True
+        self._cache = {}
+        #self.spi.max_speed_hz = 15600000
 
         for i in range(256):
             self.gamma[i] = int(pow(float(i) / 255.0, 2.0) * 255.0 + 0.5)
+
+    def _is_in_cache(self, hsh):
+        return (hsh in self._cache)
+
+    def _put_in_cache(self, hsh, data):
+        if len(data) > CACHE_SIZE:
+            return
+
+        while((sys.getsizeof(self._cache) + len(data)) > CACHE_SIZE):
+            if ((sys.getsizeof(self._cache) + len(data)) < CACHE_SIZE or
+                len(self._cache) == 0):
+                break
+
+            self._cache.popitem()
+        self._cache[hsh] = data
+
+    def set_caching(self, status):
+        if self._caching_enabled != status: 
+            self.cache = {} # Clear the cache
+
+        self._caching_enabled = status
 
     def calculate_gamma(self, pixel_in):
         if self.gamma_select == 1:
@@ -27,24 +57,41 @@ class LPD6803(BaseChip):
             pixel_in[2] = self.gamma[pixel_in[2]]
         return pixel_in
 
+
     def write_pixels(self, pixels, total_pixels, out):
-        pixel_out_bytes = bytearray(2)
-        out.write(bytearray(4))
+        self.spi.open(0, 1)
+        self.spi.max_speed_hz = 7800000
+        hsh = hash(pixels)
+
+        if self._caching_enabled and self._is_in_cache(hsh):
+            write = bytearray(4)
+            write.extend(self._cache[hsh])
+            self.spi.xfer(write)
+            self.spi.close()
+            return
+
+        data = bytearray()
 
         pixel_count = len(pixels)
         for index in range(pixel_count):
+            pixel_out_bytes = bytearray(2)
             pixel_in = self.calculate_gamma(pixels[index].get_bytearray(self.PIXEL_SIZE))
 
             pixel_out = 0b1000000000000000  # bit 16 must be ON
-            pixel_out |= (pixel_in[0] & 0x00F8) << 7  # RED is bits 11-15
-            pixel_out |= (pixel_in[1] & 0x00F8) << 2  # GREEN is bits 6-10
-            pixel_out |= (pixel_in[2] & 0x00F8) >> 3  # BLUE is bits 1-5
+            pixel_out |= (pixel_in[0] & 0x00F8) << 2  
+            pixel_out |= (pixel_in[1] & 0x00F8) << 7
+            pixel_out |= (pixel_in[2] & 0x00F8) >> 3
 
             pixel_out_bytes[0] = (pixel_out & 0xFF00) >> 8
             pixel_out_bytes[1] = (pixel_out & 0x00FF) >> 0
-            out.write(pixel_out_bytes)
-        out.write(bytearray(int(math.ceil(len(pixels) / 8 + 1))))
-        out.flush()
+            data.extend(pixel_out_bytes)
+
+        write = bytearray(4)
+        write.extend(data)
+        self.spi.xfer(write)
+        self.spi.close()
+        if self._caching_enabled:
+            self._put_in_cache(hsh, data)
         return
 
 class LPD8806(BaseChip):

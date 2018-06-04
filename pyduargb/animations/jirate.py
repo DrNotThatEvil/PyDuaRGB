@@ -37,10 +37,14 @@ class Jirate(object):
         shift = math.floor(i*self.timedelay) % ledcount
         deque_brightness.rotate(shift)
       
-        return [Pixel(self.color, x) for x in deque_brightness]
+        return print([Pixel(self.color, x) for x in deque_brightness])
 
     def to_json(self):
         return {"name": "jirate", "color": self.color, "low": self.low, "bright": self.bright, "timedelay": self.timedelay}
+    
+    @staticmethod
+    def can_be_cached():
+        return True
 
     @staticmethod
     def from_json(obj):

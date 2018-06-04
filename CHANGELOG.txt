@@ -1,0 +1,11 @@
+05/06/18
+     
+
+04/06/18
+    * Improvement: Started work porting spi to new spi_dev python module (this enables changing of the clockspeed)
+    * Improvement: Started work on chip caching to significantly improve writing performance and stability.
+    * Redesign: No more apitoken required for working with JSONRPC:
+      Since the system only runs with HTTP anyway and should not be exposed to a remote network I droped the apitoken requirement.
+    * Animations:  Added a few new animations for fun.
+    * Codebase:    General code cleanup in some places. Still needs work.
+    * Codebase:    Started on code cleanup so i can get a stable develop branch and start using feature branches.

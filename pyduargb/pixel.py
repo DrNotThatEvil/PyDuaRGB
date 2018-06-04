@@ -7,7 +7,9 @@ class Pixel(object):
     def __init__(self, rgb, brightness = 1.0):
         """Pixel constructor"""
         super().__init__()
-        self.rgb = rgb
+        self.r = rgb['r']
+        self.b = rgb['b']
+        self.g = rgb['g']
         self.brightness = brightness
         self.translated = False
 
@@ -15,45 +17,57 @@ class Pixel(object):
         if self.translated:
             return
 
-        orignal_rgb = self.rgb
+        original_r = self.r
+        original_g = self.g
+        original_b = self.b
+
         rgbmap = rgbmap.lower()
         r_index = rgbmap.index('r')
         g_index = rgbmap.index('g')
         b_index = rgbmap.index('b')
 
-        r = orignal_rgb['r']
-        g = orignal_rgb['g']
-        b = orignal_rgb['b']
+        r = original_r
+        g = original_g 
+        b = original_b
 
         if r_index == 1:
-            r = orignal_rgb['g']
+            r = original_g
         elif r_index == 2:
-            r = orignal_rgb['b']
+            r = original_b
 
         if g_index == 0:
-            g = orignal_rgb['r']
+            g = original_r 
         elif g_index == 2:
-            g = orignal_rgb['b']
+            g = original_b
 
         if b_index == 0:
-            b = orignal_rgb['r']
+            b = original_r
         elif b_index == 1:
-            b = orignal_rgb['g']
+            b = original_g
 
-        self.rgb = {'r': r, 'g': g, 'b': b}
+        self.r = r
+        self.g = g
+        self.b = b
         self.translated = True
+
+    def __eq__(self, other):
+        return (self.r == other.r and self.g == other.g and self.b == other.b 
+                and self.brightness == other.brightness)
+
+    def __hash__(self):
+        return hash((self.r, self.g, self.b, self.brightness))
 
     def get_brightness(self):
         return self.brightness
 
     def get_rgb(self):
-        return self.rgb
+        return {'r': self.r, 'g': self.g, 'b': self.b}
 
     def get_raw_bytearray(self, pixel_size):
         out_bytes = bytearray(pixel_size)
-        out_bytes[0] = self.rgb['r']
-        out_bytes[1] = self.rgb['g']
-        out_bytes[2] = self.rgb['b']
+        out_bytes[0] = self.r
+        out_bytes[1] = self.g
+        out_bytes[2] = self.b
         return out_bytes
 
     def get_bytearray(self, pixel_size):

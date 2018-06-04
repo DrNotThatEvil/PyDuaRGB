@@ -18,10 +18,14 @@ class Racer(object):
                 brightness = 1.0
             arr.append(Pixel(self.color, brightness))
             
-        return arr
+        return tuple(arr)
 
     def to_json(self):
         return {"name": "racer", "color": self.color}
+
+    @staticmethod
+    def can_be_cached():
+        return True
 
     @staticmethod
     def from_json(obj):

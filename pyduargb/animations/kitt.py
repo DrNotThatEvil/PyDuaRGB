@@ -8,8 +8,8 @@ class Kitt(object):
         self.color = color
 
     def animate_ns(self, i, duration, ledcount):
-        percent = i / (duration*.5)
-        leader = ceil((sin( percent * 2 ) * ledcount))
+        percent = i / (duration)
+        leader = abs(ceil((sin( percent * 3) * ledcount)))
 
         arr = []
         for count in range(ledcount):
@@ -22,10 +22,14 @@ class Kitt(object):
                 brightness = 1.0
             arr.append(Pixel(self.color, brightness))
             
-        return arr
+        return tuple(arr)
 
     def to_json(self):
         return {"name": "kitt", "color": self.color}
+    
+    @staticmethod
+    def can_be_cached():
+        return True
 
     @staticmethod
     def from_json(obj):

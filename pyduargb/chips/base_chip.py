@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 
+CACHE_SIZE = 15000 #15 Kb cache size.
 
 class BaseChip(object):
     """The base chip for the a DuaRGB daemon
@@ -12,6 +13,7 @@ class BaseChip(object):
 
     CHIP_NAME = "base_chip"
     PIXEL_SIZE = 3
+    PIXEL_BYTES = 2
 
     def __init__(self):
         super().__init__()

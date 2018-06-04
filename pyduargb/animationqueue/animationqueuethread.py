@@ -1,6 +1,7 @@
 import threading
 
 from .animationqueue import AnimationQueue
+from time import sleep
 
 class AnimationQueueThread(threading.Thread):
     def __init__(self, animation_lock):
@@ -26,5 +27,6 @@ class AnimationQueueThread(threading.Thread):
             queue = AnimationQueue()
             queue.perform_task()
             queue.item_done()
+            sleep(0.001)
 
             self.animation_lock.release()

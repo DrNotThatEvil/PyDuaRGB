@@ -15,7 +15,8 @@ class RGBController(Singleton):
         self.ledcount = ledcount
         self.spidevstr = spidev
         self.rgbmap = rgbmap
-        self.spidev = open(self.spidevstr, "wb")
+        self.spidev = None
+        #self.spidev = open(self.spidevstr, "wb")
         logger.info("RGBController intitalized.")
         logger.debug("RGBController chiptype: {}".format(chip.get_chipname()))
 
@@ -23,15 +24,16 @@ class RGBController(Singleton):
         #TODO implement slave led amount into playing the animation.
         start_mili = int(round(time.time() * 1000))
         for i in range(duration):
-            end_mili = int(round(time.time() * 1000)) + 1
             pixels = animation.animate_ns(i, duration, self.ledcount)
             if self.rgbmap != 'rgb':
                 for pixel in pixels:
                     pixel.rgbmap_translate(self.rgbmap)
+            self.chip.set_caching(animation.can_be_cached())
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
             
-            while (int(round(time.time() * 1000)) < end_mili):
-                time.sleep(0.0001)
+            #while (int(round(time.time() * 1000)) < end_mili):
+            #    pass
+            #time.sleep(0.0001)
 
         total_end = int(round(time.time() * 1000))
         logger.debug("total animation time: " + str(total_end - start_mili))

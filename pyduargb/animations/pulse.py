@@ -1,4 +1,5 @@
 from __future__ import print_function, absolute_import
+import math
 
 from pyduargb.pixel import Pixel
 
@@ -12,26 +13,17 @@ class Pulse(object):
         # animation takes 0.40 of the duration to fade in and out. The time in the middle 
         # the ledstrip will take to display the color statically
 
-        percent = i / duration
-        step = (1 / 0.40)
-        brightness = 0 
+        increase = math.pi / duration;
+        brightness = math.sin( i * increase );
 
-        brightness = 0.0 + (percent * step)
-
-        if (percent > 0.40 and percent < 0.60):
-            brightness = 1.0
-        
-        if (percent >= 0.60):
-            brightness = 0.0 + ((percent-0.60) * step) 
-            brightness = 1.0 - brightness
-
-        if (percent == 1.0):
-            brightness = 0
-
-        return [Pixel(self.color, brightness) for count in range(ledcount)]
+        return tuple([Pixel(self.color, brightness) for count in range(ledcount)])
 
     def to_json(self):
         return {"name": "pulse", "color": self.color}
+
+    @staticmethod
+    def can_be_cached():
+        return True
 
     @staticmethod
     def from_json(obj):
