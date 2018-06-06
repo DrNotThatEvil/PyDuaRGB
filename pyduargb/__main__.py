@@ -15,19 +15,25 @@ from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
 from .animationqueue import *
 from .jsonserver.jsonrpcserver import *
+from .logging import *
 
 
 MAIN_CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
+logger = get_logger(__file__)
 
 
 def main():
     # TODO implement logging in to __main__
+    config_file = os.path.join(MAIN_CUR_PATH, 'config.ini')
+    if not os.path.isfile(config_file):
+        logger.error("Config file not found. Exiting...")
+        sys.exit(1)
+        return
 
     # Gathering config options.
-    configsys = config_system.ConfigSystem(
-        os.path.join(MAIN_CUR_PATH, 'config.ini')
-    )
+    configsys = config_system.ConfigSystem(config_file)
+
     chipconfig = configsys.get_option('main', 'chiptype')
     leds = configsys.get_option('main', 'leds')
     spidev = configsys.get_option('main', 'spidev')
@@ -53,13 +59,14 @@ def main():
 
     def signal_handler(signal, frame):
         animation_thread.stop()
+        rgbcntl.stop()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
 
     # Setup json rpc system
     run_simple(
-        configsys.get_option('jsonrpc', 'allow').get_value(),
+        '127.0.0.1',
         configsys.get_option('jsonrpc', 'port').get_value(),
         application
     )

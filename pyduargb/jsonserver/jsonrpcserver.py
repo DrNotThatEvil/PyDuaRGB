@@ -13,7 +13,6 @@ from ..animationqueue import animationqueue, queueitem
 
 CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_PATH = os.path.realpath(os.path.join(CUR_PATH, '..', '..'))
-CONFIGSYS = config_system.ConfigSystem(os.path.join(MAIN_PATH, 'config.ini'))
 
 
 # Queue Section
@@ -36,7 +35,8 @@ def get_current_queueitem():
 # Config Section
 @dispatcher.add_method
 def get_led_count():
-    return {"led_count": CONFIGSYS.get_option('main', 'leds').get_value()}
+    configsys = config_system.ConfigSystem()
+    return {"led_count": configsys.get_option('main', 'leds').get_value()}
 
 
 # Queue manipulation section
@@ -56,7 +56,13 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
 
 @Request.application
 def application(request):
-    # Handle api token
+    allowed = config_system.ConfigSystem().get_option(
+        'jsonrpc', 'allow'
+    ).get_value()
+    if allowed != '0.0.0.0' and allowed != request.remote_addr:
+        return Response('access denied',
+                        status=403, mimetype='text/plain')
+
     if request.method != 'POST':
         return Response('pyduargb led control', mimetype='text/plain')
 

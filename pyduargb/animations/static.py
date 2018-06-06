@@ -13,7 +13,7 @@ class Static(object):
         if self._pixel_cache is None:
             self._pixel_cache = [Pixel(self.color, self.brightness)
                                  for count in range(ledcount)]
-        return self._pixel_cache
+        return tuple(self._pixel_cache)
 
     def to_json(self):
         return {

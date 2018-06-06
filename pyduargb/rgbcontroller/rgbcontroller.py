@@ -2,6 +2,7 @@ from __future__ import print_function
 import time
 import datetime
 import math
+import threading
 
 from ..logging import *
 from ..meta import Singleton
@@ -17,14 +18,24 @@ class RGBController(Singleton):
         self.spidevstr = spidev
         self.rgbmap = rgbmap
         self.spidev = None
+        self._stop_event = threading.Event()
         # self.spidev = open(self.spidevstr, "wb")
         logger.info("RGBController intitalized.")
         logger.debug("RGBController chiptype: {}".format(chip.get_chipname()))
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
     def play_animation(self, duration, animation, step=1):
         # TODO implement slave led amount into playing the animation.
         start_mili = int(round(time.time() * 1000))
         for i in range(duration):
+            if self.stopped():
+                logger.info("RGBController force stopping animation.")
+                break
             pixels = animation.animate_ns(i, duration, self.ledcount)
             if self.rgbmap != 'rgb':
                 for pixel in pixels:

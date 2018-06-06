@@ -42,7 +42,13 @@ CONFIG_TYPES = {
 
 
 class ConfigSystem(Singleton):
-    def __init__(self, config_path, default_config=None):
+    def __init__(self, config_path=None, default_config=None):
+        if (self.__class__ not in self.__class__._instances
+                and config_path is None
+                and default_config is None):
+            raise Exception('Error: ConfigSystem needs full initalization. ' +
+                            'Before it can be accesed with no paramters')
+
         self.def_conf_path = os.path.join(CUR_PATH, "default.ini")
         self.config_path = config_path
         self.slave_configs = []

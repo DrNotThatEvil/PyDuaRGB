@@ -1,5 +1,5 @@
-05/06/18
-     
+06/06/18
+    * Codebase conforms to PEP8 (except tests)
 
 04/06/18
     * Improvement: Started work porting spi to new spi_dev python module (this enables changing of the clockspeed)

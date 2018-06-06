@@ -1,6 +1,8 @@
 from __future__ import print_function, absolute_import
+import sys
 
-CACHE_SIZE = 15000  # 15 Kb cache size.
+
+CACHE_SIZE = 25000  # 25 Kb cache size.
 
 
 class BaseChip(object):
@@ -19,6 +21,31 @@ class BaseChip(object):
     def __init__(self):
         super().__init__()
         self.gamma_select = 0  # Gamma correction selection
+        self._caching_enabled = True
+        self._cache = {}
+
+    def _is_in_cache(self, hsh):
+        return (self._caching_enabled and (hsh in self._cache))
+
+    def _put_in_cache(self, hsh, data):
+        if len(data) > CACHE_SIZE or not self._caching_enabled:
+            # Can't fit in cache or cache is disabled.
+            return
+
+        # Schink cache until new data can fit in it
+        # without going over CACHE_SIZE
+        while((sys.getsizeof(self._cache) + len(data)) > CACHE_SIZE):
+            if ((sys.getsizeof(self._cache) + len(data)) < CACHE_SIZE or
+                    len(self._cache) == 0):
+                break
+
+            self._cache.popitem()
+        self._cache[hsh] = data
+
+    def set_caching(self, status):
+        if self._caching_enabled != status:
+            self.cache = {}
+        self._caching_enabled = status
 
     @classmethod
     def get_chipname(cls):
