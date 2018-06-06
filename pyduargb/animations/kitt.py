@@ -1,15 +1,15 @@
 from __future__ import print_function, absolute_import
-from math import sin,ceil
+from math import sin, ceil
 from pyduargb.pixel import Pixel
 
-class Kitt(object):
 
+class Kitt(object):
     def __init__(self, color):
         self.color = color
 
     def animate_ns(self, i, duration, ledcount):
         percent = i / (duration)
-        leader = abs(ceil((sin( percent * 3) * ledcount)))
+        leader = abs(ceil((sin(percent * 3) * ledcount)))
 
         arr = []
         for count in range(ledcount):
@@ -21,12 +21,12 @@ class Kitt(object):
             if count >= (leader - 5) and count <= leader:
                 brightness = 1.0
             arr.append(Pixel(self.color, brightness))
-            
+
         return tuple(arr)
 
     def to_json(self):
         return {"name": "kitt", "color": self.color}
-    
+
     @staticmethod
     def can_be_cached():
         return True

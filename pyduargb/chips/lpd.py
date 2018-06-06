@@ -8,6 +8,7 @@ from .base_chip import BaseChip
 
 CACHE_SIZE = 25000
 
+
 class LPD6803(BaseChip):
     """
     Chip class for a LPD6803 based ledstrip.
@@ -24,7 +25,6 @@ class LPD6803(BaseChip):
         self.spi = spidev.SpiDev()
         self._caching_enabled = True
         self._cache = {}
-        #self.spi.max_speed_hz = 15600000
 
         for i in range(256):
             self.gamma[i] = int(pow(float(i) / 255.0, 2.0) * 255.0 + 0.5)
@@ -38,15 +38,15 @@ class LPD6803(BaseChip):
 
         while((sys.getsizeof(self._cache) + len(data)) > CACHE_SIZE):
             if ((sys.getsizeof(self._cache) + len(data)) < CACHE_SIZE or
-                len(self._cache) == 0):
+                    len(self._cache) == 0):
                 break
 
             self._cache.popitem()
         self._cache[hsh] = data
 
     def set_caching(self, status):
-        if self._caching_enabled != status: 
-            self.cache = {} # Clear the cache
+        if self._caching_enabled != status:
+            self.cache = {}  # Clear the cache
 
         self._caching_enabled = status
 
@@ -56,7 +56,6 @@ class LPD6803(BaseChip):
             pixel_in[1] = self.gamma[pixel_in[1]]
             pixel_in[2] = self.gamma[pixel_in[2]]
         return pixel_in
-
 
     def write_pixels(self, pixels, total_pixels, out):
         self.spi.open(0, 1)
@@ -75,10 +74,12 @@ class LPD6803(BaseChip):
         pixel_count = len(pixels)
         for index in range(pixel_count):
             pixel_out_bytes = bytearray(2)
-            pixel_in = self.calculate_gamma(pixels[index].get_bytearray(self.PIXEL_SIZE))
+            pixel_in = self.calculate_gamma(pixels[index].get_bytearray(
+                self.PIXEL_SIZE)
+            )
 
             pixel_out = 0b1000000000000000  # bit 16 must be ON
-            pixel_out |= (pixel_in[0] & 0x00F8) << 2  
+            pixel_out |= (pixel_in[0] & 0x00F8) << 2
             pixel_out |= (pixel_in[1] & 0x00F8) << 7
             pixel_out |= (pixel_in[2] & 0x00F8) >> 3
 
@@ -94,6 +95,7 @@ class LPD6803(BaseChip):
             self._put_in_cache(hsh, data)
         return
 
+
 class LPD8806(BaseChip):
     """
     Chip class for a LPD8806
@@ -108,8 +110,10 @@ class LPD8806(BaseChip):
         self.gamma_select = 1
 
         for i in range(256):
-            self.gamma[i] = 0x80 | int(pow(float(i) / 255.0, 2.5) * 127.0 + 0.5)
-    
+            self.gamma[i] = 0x80 | int(
+                pow(float(i) / 255.0, 2.5) * 127.0 + 0.5
+            )
+
     def calucate_gamma(self, pixel_in):
         output_pixel = pixel_in
         if self.gamma_select == 1:
@@ -129,10 +133,12 @@ class LPD8806(BaseChip):
         pixel_out = bytearray((self.PIXEL_SIZE * pixel_count))
         for index in range(pixel_count):
             out_index = (index * self.PIXEL_SIZE)
-            pixel_in = self.calucate_gamma(pixels[index].get_bytearray(self.PIXEL_SIZE))
-            
+            pixel_in = self.calucate_gamma(pixels[index].get_bytearray(
+                self.PIXEL_SIZE)
+            )
+
             pixel_out[out_index:(out_index+self.PIXEL_SIZE)] = pixel_in
-        
+
         out.write(pixel_out)
         out.write(bytearray([0 for x in range(self.PIXEL_SIZE+1)]))
         out.flush()

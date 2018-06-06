@@ -5,8 +5,8 @@ import math
 
 from pyduargb.pixel import Pixel
 
-class Jirate(object):
 
+class Jirate(object):
     def __init__(self, color, low=0.25, bright=1.0, timedelay=0.10):
         self.color = color
         self.low = low
@@ -14,11 +14,6 @@ class Jirate(object):
         self.timedelay = timedelay
 
     def animate_ns(self, i, duration, ledcount):
-        # animation pulses a single color 
-        # animation takes 0.40 of the duration to fade in and out. The time in the middle 
-        # the ledstrip will take to display the color statically
-
-        
         percent = i / duration
         step = (1 / 0.10)
 
@@ -32,16 +27,22 @@ class Jirate(object):
                     brightness = self.bright
 
             ledbrightness.append(brightness)
-        
+
         deque_brightness = deque(ledbrightness)
         shift = math.floor(i*self.timedelay) % ledcount
         deque_brightness.rotate(shift)
-      
+
         return print([Pixel(self.color, x) for x in deque_brightness])
 
     def to_json(self):
-        return {"name": "jirate", "color": self.color, "low": self.low, "bright": self.bright, "timedelay": self.timedelay}
-    
+        return {
+            "name": "jirate",
+            "color": self.color,
+            "low": self.low,
+            "bright": self.bright,
+            "timedelay": self.timedelay
+        }
+
     @staticmethod
     def can_be_cached():
         return True

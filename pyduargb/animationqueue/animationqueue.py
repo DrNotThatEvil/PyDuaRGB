@@ -4,6 +4,7 @@ from .queueitem import *
 from ..logging import *
 from ..meta import Singleton
 
+
 class AnimationQueue(Singleton):
     def __init__(self):
         self._queue = []
@@ -15,7 +16,9 @@ class AnimationQueue(Singleton):
         if(len(self._queue) == 0):
             return True
 
-        return self._queue[(len(self._queue)-1)].check_queue_permissions(queueitem)
+        return self._queue[(len(self._queue)-1)].check_queue_permissions(
+            queueitem
+        )
 
     def _should_item_stick(self):
         if(len(self._queue) == 1):

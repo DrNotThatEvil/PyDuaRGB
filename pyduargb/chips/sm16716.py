@@ -3,6 +3,7 @@ from __future__ import print_function, absolute_import
 import math
 from .base_chip import BaseChip
 
+
 class SM16716(BaseChip):
     """
     Chip class for a SM16716 based ledstrip.

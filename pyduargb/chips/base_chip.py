@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 
-CACHE_SIZE = 15000 #15 Kb cache size.
+CACHE_SIZE = 15000  # 15 Kb cache size.
+
 
 class BaseChip(object):
     """The base chip for the a DuaRGB daemon
@@ -17,7 +18,7 @@ class BaseChip(object):
 
     def __init__(self):
         super().__init__()
-        self.gamma_select = 0  # Using this instead of a boolean multiple ways of gamma correction can be used.
+        self.gamma_select = 0  # Gamma correction selection
 
     @classmethod
     def get_chipname(cls):
@@ -35,4 +36,3 @@ class BaseChip(object):
         out -- The output for the bytes
         """
         raise NotImplementedError('Error: Extension of baseclass is needed')
-

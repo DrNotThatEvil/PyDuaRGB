@@ -4,13 +4,16 @@ import datetime
 from .animationqueue import *
 from ..rgbcontroller.rgbcontroller import *
 
+
 class QueueItem(object):
-    def __init__(self, duration, animation, runlevel, sticky=False, allow_lower_runlevel=False):
+    def __init__(self,
+                 duration, animation, runlevel,
+                 sticky=False, allow_lower_runlevel=False):
         self.duration = duration
         self.animation = animation
         self.runlevel = runlevel
         self.sticky = sticky
-        self.allow_lower_runlevel = allow_lower_runlevel 
+        self.allow_lower_runlevel = allow_lower_runlevel
 
     def get_duration(self):
         return self.duration
@@ -33,7 +36,7 @@ class QueueItem(object):
 
         if(self.runlevel <= queueitem.get_runlevel()):
             return True
-        
+
         return False
 
     def perform_task(self):
@@ -50,4 +53,3 @@ class QueueItem(object):
             "sticky": self.sticky,
             "allow_lower_runlevel": self.allow_lower_runlevel
         }
-

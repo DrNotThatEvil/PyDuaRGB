@@ -3,10 +3,11 @@ import os
 
 from .types import *
 
+
 class SlaveConfig(object):
     def __init__(self, slave_id, slaveip, slaveport):
         self.slave_id = slave_id
-        self.slaveip = slaveip 
+        self.slaveip = slaveip
         self.slaveport = slaveport
 
     def get_slave_id(self):

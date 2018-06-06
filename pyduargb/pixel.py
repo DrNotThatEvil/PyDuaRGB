@@ -4,7 +4,7 @@ from __future__ import print_function, absolute_import
 class Pixel(object):
     """DuaRGB Pixel class for make handling of pixels easier"""
 
-    def __init__(self, rgb, brightness = 1.0):
+    def __init__(self, rgb, brightness=1.0):
         """Pixel constructor"""
         super().__init__()
         self.r = rgb['r']
@@ -27,7 +27,7 @@ class Pixel(object):
         b_index = rgbmap.index('b')
 
         r = original_r
-        g = original_g 
+        g = original_g
         b = original_b
 
         if r_index == 1:
@@ -36,7 +36,7 @@ class Pixel(object):
             r = original_b
 
         if g_index == 0:
-            g = original_r 
+            g = original_r
         elif g_index == 2:
             g = original_b
 
@@ -51,7 +51,7 @@ class Pixel(object):
         self.translated = True
 
     def __eq__(self, other):
-        return (self.r == other.r and self.g == other.g and self.b == other.b 
+        return (self.r == other.r and self.g == other.g and self.b == other.b
                 and self.brightness == other.brightness)
 
     def __hash__(self):
