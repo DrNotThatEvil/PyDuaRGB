@@ -8,7 +8,7 @@ The slave raspberry pi's will connect to it and be assigned a order depending on
 slave raspberry pi connects first.
 
 If only one slave raspberry pi is going to be used and you are fine
-with the default master mode you can continue on with slave configuration.
+with the default slave mode you can continue on with slave configuration.
 But for more precise control we recommend setting up some paramaters in the master.
 
 ### Defining slaves on the master
@@ -28,7 +28,7 @@ mode = continue
 
 In this example configuration 2 slaves are defined. `slave0` is the first slave.
 and `slave1` is the second. The mode specified tells the master how to treat each
-slave device. You can mix and match these modes for different lighting results
+slave device. You can mix and match these modes for different lighting results.
 
 #### Slave modes
 ##### Continue (default)
@@ -79,4 +79,4 @@ These features can be usefull in debugging.
 ### Some notes about slave behaviour
 if PyDuaRGB is configured to act as a `slave` the default JSONRPC system is halted and can't be used.
 A `slave` will make the connection to it's `master` this connection will remain open. A slave will try reconnect
-if it loses connection to it's `master`. 
+if it loses connection to it's `master`.

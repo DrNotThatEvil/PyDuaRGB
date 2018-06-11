@@ -31,6 +31,8 @@ from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
 from .animationqueue import *
 from .jsonserver.jsonrpcserver import *
+from .master.masterthread import MasterThread
+from .slave.slavethread import SlaveThread
 from .logging import *
 
 
@@ -65,6 +67,17 @@ def main():
         rgbmap.get_value()
     )
 
+    ms_thread = None
+
+    # Setup slave or master networking threads
+    if(configsys.get_option('master', 'ip') is not False):
+        # instance is slave
+        ms_thread = SlaveThread('127.0.0.1', 8083)
+    else:
+        # instance is a master
+        ms_thread = MasterThread('', 8082)
+    ms_thread.start()
+
     # Setup AnimationQueue
     queue = animationqueue.AnimationQueue()
 
@@ -74,6 +87,7 @@ def main():
     animation_thread.start()
 
     def signal_handler(signal, frame):
+        ms_thread.stop()
         animation_thread.stop()
         rgbcntl.stop()
         sys.exit(0)

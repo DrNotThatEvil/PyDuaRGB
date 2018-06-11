@@ -47,12 +47,9 @@ CONFIG_TYPES = {
         ['port', ConfigIntType],
         ['apikey', ConfigStringType]
     ],
-    'slaves': [
-        ['count', ConfigIntType]
-    ],
     'master': [
-        ['allow', ConfigIpType],
-        ['slavekey', ConfigStringType]
+        ['ip', ConfigIpType],
+        ['slavecount', ConfigIntType],
     ]
 }
 
@@ -160,49 +157,50 @@ class ConfigSystem(Singleton):
         return True
 
     def _load_slaves(self):
-        if(not self.main_config.has_section('slaves')):
+        if(not self.main_config.has_section('master')):
             return False
 
-        if(not self.main_config.has_option('slaves', 'count')):
+        if(not self.main_config.has_option('master', 'slavecount')):
             return False
 
         config_type = ConfigIntType
-        if(not config_type.validate(self.main_config.get("slaves", "count"))):
+        if(not config_type.validate(
+                self.main_config.get("master", "slavecount"))):
             logger.warn("slave count invalid, No slaves will be loaded.")
             return False
 
-        slave_cnt = self.main_config.getint("slaves", "count")
+        slave_cnt = self.main_config.getint("master", "slavecount")
         for i in range(0, slave_cnt):
             logger.info("Getting config for slave{0}...".format(i))
             section = "slave{0}".format(i)
 
             if(not self.main_config.has_section(section)):
-                logger.warning(section + "is not configured skipping slave.")
+                logger.warning(section + " is not configured skipping slave.")
                 continue
 
             if(not self.main_config.has_option(section, 'ip')):
-                logger.warning(section + "ip not configured skipping slave.")
-                continue
-
-            if(not self.main_config.has_option(section, 'port')):
-                logger.warning(section + "port not configured skipping slave.")
+                logger.warning(section + " ip not configured skipping slave.")
                 continue
 
             ipType = ConfigIpType
             ip = self.main_config.get(section, 'ip')
             if(not ipType.validate(self.main_config.get(section, 'ip'))):
-                logger.warning(section + "ip not a ip skipping slave.")
+                logger.warning(section + " ip not a ip skipping slave.")
                 continue
 
-            inttype = ConfigIntType
-            port = self.main_config.get(section, 'port')
-            if(not inttype.validate(self.main_config.get(section, 'port'))):
-                logger.warning(section + "port not a int skipping slave.")
-                continue
+            mode = 'continue'
+            if(not self.main_config.has_option(section, 'mode')):
+                logger.warning(section + " mode not configured. Using default")
+            else:
+                modeType = ConfigStringType
+                temp_mode = self.main_config.get(section, 'ip')
+                if(not modeType.validate(temp_mode)):
+                    logger.warning(section + " mode invalid. Using default")
+                else:
+                    mode = temp_mode
 
-            slave_id = len(self.slave_configs)
-            self.slave_configs.append(SlaveConfig(slave_id, ip, port))
-            logger.info("Configuration loaded for" + section)
+            self.slave_configs.append(SlaveConfig(i, ip, mode))
+            logger.info("Slave configuration loaded for: " + section)
 
     def get_option(self, section, option):
         config_names = ["main", "default"]

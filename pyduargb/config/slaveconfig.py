@@ -21,10 +21,9 @@ from .types import *
 
 
 class SlaveConfig(object):
-    def __init__(self, slave_id, slaveip, slaveport):
+    def __init__(self, slave_id, slaveip, mode):
         self.slave_id = slave_id
         self.slaveip = slaveip
-        self.slaveport = slaveport
 
     def get_slave_id(self):
         return self.slave_id
