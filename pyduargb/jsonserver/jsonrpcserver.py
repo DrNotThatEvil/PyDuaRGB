@@ -21,6 +21,7 @@ from werkzeug.wrappers import Request, Response
 from jsonrpc import JSONRPCResponseManager, dispatcher
 
 from .jsonutils import *
+from ..config.types import ConfigIpType
 from ..config import config_system
 from ..animationqueue import animationqueue
 from ..animations import pulse
@@ -72,6 +73,7 @@ def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
 
 @Request.application
 def application(request):
+    configsys = config_system.ConfigSystem()
     allowed = config_system.ConfigSystem().get_option(
         'jsonrpc', 'allow'
     ).get_value()
@@ -83,6 +85,21 @@ def application(request):
         return Response('pyduargb led control', mimetype='text/plain')
 
     data = json.loads(request.data.decode("utf-8"))
+
+    if(configsys.get_option('master', 'ip') is not False and
+        ConfigIpType.validate(
+            configsys.get_option('master', 'ip').get_value()
+    )):
+        return Response(json.dumps(
+            {
+             "jsonrpc": "2.0",
+             "error": {
+                        "code": -32001,
+                        "message": "Configured as slave no jsonrpc allowed"
+                      },
+             "id": data['id']
+            }), mimetype='application/json')
+
     # NOTE: Removed apitoken. jsonrpc is only safe for local network anyway
     # due to http making the apitoken useless.
 

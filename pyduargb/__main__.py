@@ -23,7 +23,7 @@ import time
 import signal
 import sys
 
-
+from .config.types import ConfigIpType
 from .config import config_system
 from . import chips
 from .rgbcontroller import rgbcontroller
@@ -31,8 +31,8 @@ from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
 from .animationqueue import *
 from .jsonserver.jsonrpcserver import *
-from .master.masterthread import MasterThread
-from .slave.slavethread import SlaveThread
+from .masterslave.master.masterthread import MasterThread
+from .masterslave.slave.slavethread import SlaveThread
 from .logging import *
 
 
@@ -68,27 +68,37 @@ def main():
     )
 
     ms_thread = None
-
+    animation_thread = None
     # Setup slave or master networking threads
-    if(configsys.get_option('master', 'ip') is not False):
+    if(configsys.get_option('master', 'ip') is not False and
+        ConfigIpType.validate(
+            configsys.get_option('master', 'ip').get_value()
+    )):
+        logger.info("Slave config detected. Starting only slave components.")
         # instance is slave
-        ms_thread = SlaveThread('127.0.0.1', 8083)
+        ms_thread = SlaveThread(
+            configsys.get_option('master', 'ip').get_value()
+        )
     else:
+        logger.info("Master config detected. Starting all components.")
         # instance is a master
         ms_thread = MasterThread('', 8082)
+
+        # Only masters need a animation queue
+        # Setup AnimationQueue
+        queue = animationqueue.AnimationQueue()
+
+        # Setup animation Lock and AnimationQueueThread
+        animation_lock = threading.RLock()
+        animation_thread = AnimationQueueThread(animation_lock)
+        animation_thread.start()
+
     ms_thread.start()
-
-    # Setup AnimationQueue
-    queue = animationqueue.AnimationQueue()
-
-    # Setup animation Lock and AnimationQueueThread
-    animation_lock = threading.RLock()
-    animation_thread = AnimationQueueThread(animation_lock)
-    animation_thread.start()
 
     def signal_handler(signal, frame):
         ms_thread.stop()
-        animation_thread.stop()
+        if animation_thread is not None:
+            animation_thread.stop()
         rgbcntl.stop()
         sys.exit(0)
 

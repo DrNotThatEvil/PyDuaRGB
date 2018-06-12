@@ -202,6 +202,9 @@ class ConfigSystem(Singleton):
             self.slave_configs.append(SlaveConfig(i, ip, mode))
             logger.info("Slave configuration loaded for: " + section)
 
+    def get_slave_configs(self):
+        return self.slave_configs
+
     def get_option(self, section, option):
         config_names = ["main", "default"]
         configs = [self.main_config, self.default_config]
@@ -209,25 +212,25 @@ class ConfigSystem(Singleton):
 
         for x in range(len(configs)):
             if(not configs[x].has_section(section)):
-                logger.warn("Could not load section" +
-                            "{0} from {1} config!".format(
+                logger.warn("Could not load section " +
+                            "'{0}' from '{1}' config!".format(
                                 section, config_names[x]
                             ))
                 if(x == (len(configs)-1)):
                     return False
 
-                logger.info("Trying to load from {0} config...".format(
+                logger.info("Trying to load from '{0}' config...".format(
                                 config_names[x+1])
                             )
                 continue
 
             if(not configs[x].has_option(section, option)):
-                logger.warn("Could not load option {0} from {1} config!"
+                logger.warn("Could not load option '{0}' from '{1}' config!"
                             .format(option, config_names[x]))
                 if(x == (len(configs)-1)):
                     return False
 
-                logger.info("Trying to load from {0} config...".format(
+                logger.info("Trying to load from '{0}' config...".format(
                                 config_names[x+1])
                             )
                 continue
