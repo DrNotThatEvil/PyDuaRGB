@@ -28,7 +28,7 @@ logger = get_logger(__file__)
 
 
 class RGBController(Singleton):
-    def __init__(self, chip, ledcount, spidev, rgbmap):
+    def __init__(self, chip, ledcount, spidev, rgbmap, is_slave):
         self.chip = chip
         self.ledcount = ledcount
         self.spidevstr = spidev

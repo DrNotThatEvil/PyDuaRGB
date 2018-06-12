@@ -17,6 +17,7 @@
 from __future__ import print_function, absolute_import, unicode_literals
 
 from werkzeug.serving import run_simple
+import argparse
 import os
 import threading
 import time
@@ -41,9 +42,35 @@ MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
 logger = get_logger(__file__)
 
 
+def parse_arguments():
+    description = '''
+PyDuaRGB: the python daemon for all your ledstrip needs!
+    (c) Willmar 'DrNotThatEvil' Knikker 2018
+    Licenced under GNU LGPLv3 (see LICENCE file)
+'''
+
+    usage = 'Usage PyDuaRGB.py -h -c CONFIG'
+
+    parser = argparse.ArgumentParser(
+            description=description,
+            usage=usage,
+            formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-c', '--config',
+                        help='Specify a config file location',
+                        required=False)
+    args = vars(parser.parse_args())
+    return args
+
+
 def main():
+    args = parse_arguments()
+
     # TODO implement logging in to __main__
-    config_file = os.path.join(MAIN_CUR_PATH, 'config.ini')
+    if args['config'] is None:
+        config_file = os.path.join(MAIN_CUR_PATH, 'config.ini')
+    else:
+        config_file = args['config']
+
     if not os.path.isfile(config_file):
         logger.error("Config file not found. Exiting...")
         sys.exit(1)
@@ -57,6 +84,7 @@ def main():
     spidev = configsys.get_option('main', 'spidev')
     rgbmap = configsys.get_option('main', 'rgbmap')
 
+    is_slave = (configsys.get_option('master', 'ip') is not False)
     # TODO implement checking of all gathered config values
 
     # Setup RGBController
@@ -64,16 +92,14 @@ def main():
         chipconfig.get_chip_obj(),
         leds.get_value(),
         spidev.get_str_value(),
-        rgbmap.get_value()
+        rgbmap.get_value(),
+        is_slave
     )
 
     ms_thread = None
     animation_thread = None
     # Setup slave or master networking threads
-    if(configsys.get_option('master', 'ip') is not False and
-        ConfigIpType.validate(
-            configsys.get_option('master', 'ip').get_value()
-    )):
+    if is_slave:
         logger.info("Slave config detected. Starting only slave components.")
         # instance is slave
         ms_thread = SlaveThread(
@@ -105,8 +131,9 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     # Setup json rpc system
+    # TODO: Decide if this is nesessary for slaves.
     run_simple(
-        '127.0.0.1',
+        '0.0.0.0',
         configsys.get_option('jsonrpc', 'port').get_value(),
         application
     )

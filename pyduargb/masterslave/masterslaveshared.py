@@ -18,6 +18,8 @@ import socket
 import threading
 from enum import Enum
 
+from ..animations import Pulse
+from ..rgbcontroller import rgbcontroller
 from ..logging import *
 
 logger = get_logger(__file__)
@@ -54,13 +56,21 @@ class MasterSlaveSharedThread(threading.Thread):
 
     def _pong(self, extra_data):
         logger.info("Pong recieved")
+        rgbcntl = rgbcontroller.RGBController()
+        animation = Pulse({'r': 255, 'g': 0, 'b': 0})
+        rgbcntl.play_animation(500, animation)
 
-    def _send(self, data):
+    def _send(self, data, extra_data=None):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
             return
 
         send_data = b'\x64\x75\x61\x00' + data
+
+        if extra_data is not None:
+            send_data = send_data + b'\x00' + extra_data.encode('UTF-8')
+            # Append nullbyte and extra data to the command
+
         self._sock.send(send_data)
 
     def _recv(self, allowed, data):
@@ -76,9 +86,10 @@ class MasterSlaveSharedThread(threading.Thread):
         end = all_data.find(b'\x00')
         command = b''
         extra_data = b''
+
         if end != -1:
             command = all_data[:end]
-            extra_data = all_data[(end+1):]
+            extra_data = all_data[end:]
         else:
             command = all_data
 

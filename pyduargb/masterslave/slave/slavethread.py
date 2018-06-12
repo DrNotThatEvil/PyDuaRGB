@@ -1,6 +1,7 @@
 import socket
 import threading
 import sys
+import json
 
 from ..masterslaveshared import *
 from ...logging import *
@@ -9,6 +10,8 @@ logger = get_logger(__file__)
 
 
 class SlaveThread(MasterSlaveSharedThread):
+    ALLOWED_COMMANDS = MasterSlaveSharedThread.ALLOWED_COMMANDS + ['quit', 'info']
+
     def __init__(self, host):
         super(SlaveThread, self).__init__(host)
         self._host = host
@@ -30,6 +33,10 @@ class SlaveThread(MasterSlaveSharedThread):
         logger.info("Master disconnected.")
         self._sock.close()
         self._state = ConnectionState.DISCONNECTED
+
+    def _info(self, extra_data):
+        logger.info("Info request recieved.")
+        self._send(b'RETURN_INFO', extra_data=json.dumps({"test": False}))
 
     def _connect(self):
         try:
@@ -63,7 +70,7 @@ class SlaveThread(MasterSlaveSharedThread):
         if self._state == ConnectionState.CONNECTED:
             self._send(b'QUIT')
             self._state = ConnectionState.QUITING
-            self.ping_timer.cancel()
+            self._ping_timer.cancel()
 
         if self._state == ConnectionState.CONNECTING:
             self._connection_timer.cancel()

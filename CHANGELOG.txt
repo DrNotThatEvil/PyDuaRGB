@@ -1,3 +1,9 @@
+13/06/18
+    * Working on Master slave implementation.
+    * Introduced shared network parent class for master and slave threads
+      I can now work on the slave/master implementations more quickly.
+    * Improvement: Added argparse for specifiing custom config location.
+
 06/06/18
     * Codebase conforms to PEP8 (except tests)
 
