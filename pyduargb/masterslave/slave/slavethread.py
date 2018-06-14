@@ -4,13 +4,15 @@ import sys
 import json
 
 from ..masterslaveshared import *
+from ...config import config_system
 from ...logging import *
 
 logger = get_logger(__file__)
 
 
 class SlaveThread(MasterSlaveSharedThread):
-    ALLOWED_COMMANDS = MasterSlaveSharedThread.ALLOWED_COMMANDS + ['quit', 'info']
+    ALLOWED_COMMANDS = (MasterSlaveSharedThread.ALLOWED_COMMANDS +
+                        ['quit', 'info'])
 
     def __init__(self, host):
         super(SlaveThread, self).__init__(host)
@@ -36,7 +38,16 @@ class SlaveThread(MasterSlaveSharedThread):
 
     def _info(self, extra_data):
         logger.info("Info request recieved.")
-        self._send(b'RETURN_INFO', extra_data=json.dumps({"test": False}))
+        configsys = config_system.ConfigSystem()
+
+        self._send(b'RETURN_INFO', extra_data=json.dumps({
+            "rgbmap":
+                configsys.get_option('main', 'rgbmap').get_value(),
+            "chiptype":
+                configsys.get_option('main', 'chiptype').get_str_value(),
+            "leds":
+                configsys.get_option('main', 'leds').get_value()
+        }))
 
     def _connect(self):
         try:

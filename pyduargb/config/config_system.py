@@ -193,7 +193,7 @@ class ConfigSystem(Singleton):
                 logger.warning(section + " mode not configured. Using default")
             else:
                 modeType = ConfigStringType
-                temp_mode = self.main_config.get(section, 'ip')
+                temp_mode = self.main_config.get(section, 'mode')
                 if(not modeType.validate(temp_mode)):
                     logger.warning(section + " mode invalid. Using default")
                 else:

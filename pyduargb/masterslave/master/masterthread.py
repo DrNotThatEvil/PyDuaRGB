@@ -1,16 +1,17 @@
 import socket
 import threading
 import select
+import json
 
 from enum import Enum
 
-from ...meta import Singleton
 from ...logging import *
 from ...config import config_system
-
 from ..masterslaveshared import *
+from .masterdata import MasterData
 
 logger = get_logger(__file__)
+masterdb = MasterData()
 
 
 class SlaveInfoState(Enum):
@@ -29,19 +30,43 @@ class MasterSlaveSocketThread(MasterSlaveSharedThread):
         self._master = master
         self._sock = client
         self._stop_event = threading.Event()
+        self._info = None
         self._info_state = SlaveInfoState.PRE_ASKING
         self._info_timer = threading.Timer(2.0, self._request_info)
         self._info_timer.start()
+        self._config = slaveconfig
 
     def _quit(self, extra_data):
         self._sock.close()
         self._master.remove_slave(self)
         self._state = ConnectionState.QUITING
 
+    def _register_in_db(self):
+        # Get the last index.
+        order = masterdb.get_last_index()
+        lock_order = False
+
+        if self._config is not None:
+            # we have a id meaning we have a order/slave_id
+            order = self._config.get_slave_id()
+            lock_order = True
+        masterdb.add_slave(order, lock_order, self._info)
+
     def _return_info(self, extra_data):
-        print("Return info has been recieved")
+        # TODO replace X with actually assigned order
+        logger.info("SlaveX has send his info.")
         self._info_state = SlaveInfoState.ASKED
         self._info_timer.cancel()
+
+        data = json.loads(extra_data.decode('utf-8'))
+        mode = 'continue'
+        if self._config is not None:
+            mode = self._config.get_mode()
+
+        data['mode'] = mode
+        self._info = data
+        self._register_in_db()
+        # TODO save info in singleton
 
     def _request_info(self):
         if self._info_state == SlaveInfoState.PRE_ASKING:
@@ -58,8 +83,9 @@ class MasterSlaveSocketThread(MasterSlaveSharedThread):
             self._info_timer.start()
 
     def stop(self):
+        self._info_timer.cancel()
         self._send(b'QUIT')
-        self._quit(None)
+        self._state = ConnectionState.QUITING
         super(MasterSlaveSocketThread, self).stop()
 
     def stopped(self):
@@ -67,7 +93,7 @@ class MasterSlaveSocketThread(MasterSlaveSharedThread):
 
     def run(self):
         while(not self.stopped()):
-            if self.stopped():
+            if self.stopped() or self._state == ConnectionState.QUITING:
                 break
 
             try:
@@ -94,10 +120,10 @@ class MasterThread(MasterSlaveSharedThread):
         logger.info("Slave has disconnected")
 
     def stop(self):
+        self._state = ConnectionState.QUITING
         for index, slave in enumerate(self._slave_threads):
             logger.info("Trying to disconnect slave index: {}".format(index))
             slave.stop()
-        self._state = ConnectionState.QUITING
         super(MasterThread, self).stop()
 
     def _get_slave_config(self, address):
@@ -115,6 +141,8 @@ class MasterThread(MasterSlaveSharedThread):
             if self.stopped():
                 break
 
+
+
             # client, address = self._sock.accept()
             readable, writable, errored = select.select(self._readlist,
                                                         [], [], 1)
@@ -124,11 +152,11 @@ class MasterThread(MasterSlaveSharedThread):
 
                 client, address = self._sock.accept()
                 if self._state == ConnectionState.LISTENING:
-                    client.settimeout(10)
-                    slaveconfig = self._get_slave_config(address)
-
+                    client.setblocking(False)
+                    slaveconfig = self._get_slave_config(address[0])
                     slavethread = MasterSlaveSocketThread(self,
-                                                          client, address)
+                                                          client, address,
+                                                          slaveconfig)
                     slavethread.start()
                     self._slave_threads.append(slavethread)
                     logging.info("Master/Slave: Connection from slave!")

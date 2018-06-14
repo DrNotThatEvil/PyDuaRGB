@@ -23,7 +23,9 @@ import threading
 from ..logging import *
 from ..meta import Singleton
 from ..chips import *
+from ..masterslave.master.masterdata import MasterData
 
+masterdb = MasterData()
 logger = get_logger(__file__)
 
 
@@ -52,12 +54,19 @@ class RGBController(Singleton):
             if self.stopped():
                 logger.info("RGBController force stopping animation.")
                 break
-            pixels = animation.animate_ns(i, duration, self.ledcount)
+
+            # Get the added leds from the slaves (that are in continue mode)
+            total_leds = self.ledcount + masterdb.get_added_leds()
+            all_pixels = list(animation.animate_ns(i, duration, total_leds))
+            pixels = tuple(all_pixels[0:self.ledcount])  # cut remote leds.
+
             if self.rgbmap != 'rgb':
                 for pixel in pixels:
                     pixel.rgbmap_translate(self.rgbmap)
             self.chip.set_caching(animation.can_be_cached())
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
+
+            masterdb.write_remote_leds(all_pixels[self.ledcount:])
 
         total_end = int(round(time.time() * 1000))
         logger.debug("total animation time: " + str(total_end - start_mili))
