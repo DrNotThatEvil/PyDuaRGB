@@ -64,6 +64,7 @@ class MasterSlaveSocketThread(MasterSlaveSharedThread):
             mode = self._config.get_mode()
 
         data['mode'] = mode
+        data['sock_hash'] = hash(self)
         self._info = data
         self._register_in_db()
         # TODO save info in singleton
@@ -100,8 +101,15 @@ class MasterSlaveSocketThread(MasterSlaveSharedThread):
                 data = self._sock.recv(1024)
                 if(len(data) > 0):
                     self._recv(self.ALLOWED_COMMANDS, data)
+                    continue
             except socket.error:
-                continue
+                pass
+
+            led_bytes = masterdb.get_send_data(hash(self))
+            if(len(led_bytes) > 0):
+                self._send_raw(b'LEDS', bytes(led_bytes))
+            # if len(led_bytes) > 0:
+            #    print(led_bytes.hex())
 
 
 class MasterThread(MasterSlaveSharedThread):
@@ -129,7 +137,7 @@ class MasterThread(MasterSlaveSharedThread):
     def _get_slave_config(self, address):
         for slavecfg in self._slave_configs:
             if slavecfg.get_slave_ip() == address:
-                print(address)
+                pass
         return None
 
     def run(self):

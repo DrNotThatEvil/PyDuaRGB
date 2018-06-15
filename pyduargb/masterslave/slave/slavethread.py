@@ -12,7 +12,7 @@ logger = get_logger(__file__)
 
 class SlaveThread(MasterSlaveSharedThread):
     ALLOWED_COMMANDS = (MasterSlaveSharedThread.ALLOWED_COMMANDS +
-                        ['quit', 'info'])
+                        ['quit', 'info', 'leds'])
 
     def __init__(self, host):
         super(SlaveThread, self).__init__(host)
@@ -23,12 +23,13 @@ class SlaveThread(MasterSlaveSharedThread):
         self._connection_timer = threading.Timer(
             self._retrytimer, self._connect
         )
+
         self._connect()
 
     def _send_ping(self):
         self._send(b'PING')
-        if not self.stopped():
-            self._ping_timer = threading.Timer(5.0, self._send_ping)
+        if not self.stopped() and self._state == ConnectionState.CONNECTED:
+            self._ping_timer = threading.Timer(10.0, self._send_ping)
             self._ping_timer.start()
 
     def _quit(self, extra_data):
@@ -54,11 +55,12 @@ class SlaveThread(MasterSlaveSharedThread):
             try:
                 self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self._sock.connect((self._host, 8082))
-                self._sock.settimeout(60)
+                # self._sock.setblocking(False)
+                self._sock.settimeout(2)
                 self._retrytimer = 2.5
                 self._state = ConnectionState.CONNECTED
                 self._ping_timer = threading.Timer(
-                    5.0, self._send_ping
+                    10.0, self._send_ping
                 )
                 self._ping_timer.start()
             except (socket.timeout,
@@ -76,6 +78,11 @@ class SlaveThread(MasterSlaveSharedThread):
             )
             self.stop()
             sys.exit(0)
+
+    def _leds(self, extra_data):
+        bytearr = bytearray(extra_data)
+        leds = [[bytearr[(i*3)], bytearr[(i*3)+1], bytearr[(i*3)+2]]
+                for i in range(int(len(extra_data)/3))]
 
     def stop(self):
         if self._state == ConnectionState.CONNECTED:
@@ -107,5 +114,8 @@ class SlaveThread(MasterSlaveSharedThread):
                 data = self._sock.recv(1024)
                 if(len(data) > 0):
                     self._recv(self.ALLOWED_COMMANDS, data)
-            except socket.error:
+                    continue
+            except socket.error as e:
                 continue
+
+            super(SlaveThread, self)._process_backlog()

@@ -16,7 +16,7 @@
 
 import socket
 import threading
-from enum import Enum
+from enum import Enum, IntEnum
 
 from ..animations import Pulse
 from ..rgbcontroller import rgbcontroller
@@ -34,8 +34,16 @@ class ConnectionState(Enum):
     DISCONNECTED = 5
 
 
+class ClientState(IntEnum):
+    WAITING = 0
+    MODE_REQUESTED = 1
+    RECV = 2
+    SEND = 3
+
+# WIP CONTINUE IMPLEMENTING CLIENT STATE 
+
 class MasterSlaveSharedThread(threading.Thread):
-    ALLOWED_COMMANDS = ['ping', 'pong', 'quit']
+    ALLOWED_COMMANDS = ['ping', 'pong', 'quit', 'mode_req', 'mode_ack']
 
     def __init__(self, host):
         super(MasterSlaveSharedThread, self).__init__()
@@ -43,6 +51,12 @@ class MasterSlaveSharedThread(threading.Thread):
         self._sock = None
         self._host = host
         self._stop_event = threading.Event()
+        self._sending = False
+        self._send_backlog = {}
+
+        self._remote_state = ClientState.WAITING
+        self._host_state = ClientState.WAITING
+        self._requested_state = ClientState.WAITING
 
     def stop(self):
         self._stop_event.set()
@@ -57,9 +71,69 @@ class MasterSlaveSharedThread(threading.Thread):
     def _pong(self, extra_data):
         logger.info("Pong recieved")
 
-    def _send_raw(self, data, extra_data):
+    def _process_backlog(self):
+        print(self._send_backlog)
+
+        if len(self._send_backlog) == 0:
+            return
+
+        #for hsh, data in self._send_backlog:
+        #    print(hsh, data)
+            ##self._send_raw(self._send_backlog[hsh][0],
+            ##               self._send_backlog[hsh][1])
+
+    def _mode_ack(self, extra_data):
+        logger.info("Remote state changed.")
+        self._host_state = self._requested_state
+
+    def _mode_req(self, extra_data):
+        state_int = int.from_bytes(extra_data, byteorder='little')
+        state = ClientState(state_int)
+
+        self._host_state = state
+        if state == ClientState.RECV:
+            self._remote_state = ClientState.SEND
+
+        if state == ClientState.WAITING:
+            self._remote_state = ClientState.WAITING
+
+        logger.info("State changed. {}".format(int(state)))
+        self._send_raw(b'MODE_ACK', None, True)
+
+    def _negotiate_state(self, state):
+        if (self._remote_state == ClientState.WAITING and
+                self._host_state == ClientState.WAITING):
+            self._host_state = ClientState.MODE_REQUESTED
+            self._remote_state = ClientState.MODE_REQUESTED
+            self._requested_state = (ClientState.SEND if state ==
+                                     ClientState.RECV
+                                     else ClientState.SEND)
+            data = int(state).to_bytes(1, byteorder='little')
+            self._send_raw(b'MODE_REQ', data, True)
+
+    def _negotiate_reset(self):
+        print(self._remote_state)
+        print(self._host_state)
+        print(self._requested_state)
+
+        if (self._remote_state == ClientState.RECV):
+            self._host_state = ClientState.MODE_REQUESTED
+            self._remote_state = ClientState.MODE_REQUESTED
+            self._requested_state = ClientState.WAITING
+            self._send_raw(b'MODE_REQ',
+                           int(ClientState.WAITING).to_bytes(
+                                1, byteorder='little'), True)
+
+    def _send_raw(self, data, extra_data, negotiate=False):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
+            return
+
+        if not negotiate and self._host_state != ClientState.SEND:
+            self._negotiate_state(ClientState.RECV)
+            request = (data, extra_data)
+            if hash(request) not in self._send_backlog.keys():
+                self._send_backlog[hash(request)] = request
             return
 
         send_data = b'\x64\x75\x61\x00' + data
@@ -69,10 +143,20 @@ class MasterSlaveSharedThread(threading.Thread):
             # Append nullbyte and extra data to the command
 
         self._sock.send(send_data)
+        if not negotiate:
+            self._negotiate_reset()
 
-    def _send(self, data, extra_data=None):
+    def _send(self, data, extra_data=None, negotiate=False):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
+            return
+
+        if not negotiate and self._host_state != ClientState.SEND:
+            self._negotiate_state(ClientState.RECV)
+            request = (data, (extra_data.encode('UTF-8')
+                              if extra_data is not None else None))
+            if hash(request) not in self._send_backlog.keys():
+                self._send_backlog[hash(request)] = request
             return
 
         send_data = b'\x64\x75\x61\x00' + data
@@ -82,6 +166,8 @@ class MasterSlaveSharedThread(threading.Thread):
             # Append nullbyte and extra data to the command
 
         self._sock.send(send_data)
+        if not negotiate:
+            self._negotiate_reset()
 
     def _recv(self, allowed, data):
         if self._state not in [ConnectionState.LISTENING,
@@ -119,4 +205,4 @@ class MasterSlaveSharedThread(threading.Thread):
             )
 
     def run(self):
-        raise NotImplementedError("MasterSlaveSharedThread should be extended")
+        raise NotImplementedError("Run needs to be extended.")

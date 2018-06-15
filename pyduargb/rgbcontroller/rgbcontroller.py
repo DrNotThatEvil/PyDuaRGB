@@ -60,13 +60,13 @@ class RGBController(Singleton):
             all_pixels = list(animation.animate_ns(i, duration, total_leds))
             pixels = tuple(all_pixels[0:self.ledcount])  # cut remote leds.
 
+            masterdb.write_remote_leds(all_pixels[self.ledcount:])
+
             if self.rgbmap != 'rgb':
                 for pixel in pixels:
                     pixel.rgbmap_translate(self.rgbmap)
             self.chip.set_caching(animation.can_be_cached())
             self.chip.write_pixels(pixels, self.ledcount, self.spidev)
-
-            masterdb.write_remote_leds(all_pixels[self.ledcount:])
 
         total_end = int(round(time.time() * 1000))
         logger.debug("total animation time: " + str(total_end - start_mili))
