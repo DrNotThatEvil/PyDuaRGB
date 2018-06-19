@@ -32,12 +32,12 @@ class SlaveThread(MasterSlaveSharedThread):
             self._ping_timer = threading.Timer(10.0, self._send_ping)
             self._ping_timer.start()
 
-    def _quit(self, extra_data):
+    def _quit(self, extra_data, socket):
         logger.info("Master disconnected.")
         self._sock.close()
         self._state = ConnectionState.DISCONNECTED
 
-    def _info(self, extra_data):
+    def _info(self, extra_data, socket):
         logger.info("Info request recieved.")
         configsys = config_system.ConfigSystem()
 
@@ -67,7 +67,7 @@ class SlaveThread(MasterSlaveSharedThread):
                     ConnectionRefusedError) as e:
                 self._sock.close()
                 logger.info(
-                    "Could not connect to master." +
+                    "Could not connect to master. " +
                     "Retrying after {} seconds".format(self._retrytimer)
                 )
                 self._state = ConnectionState.DISCONNECTED
@@ -79,10 +79,22 @@ class SlaveThread(MasterSlaveSharedThread):
             self.stop()
             sys.exit(0)
 
-    def _leds(self, extra_data):
+    def _error(self, error):
+        self._connection_timer = threading.Timer(
+            self._retrytimer, self._connect
+        )
+        self._connect()
+
+    def _leds(self, extra_data, socket):
         bytearr = bytearray(extra_data)
         leds = [[bytearr[(i*3)], bytearr[(i*3)+1], bytearr[(i*3)+2]]
                 for i in range(int(len(extra_data)/3))]
+        configsys = config_system.ConfigSystem()
+        if len(leds) > configsys.get_option('main', 'leds').get_value():
+            logger.info("Recieved to many leds")
+            return
+
+        print(leds[0])
 
     def stop(self):
         if self._state == ConnectionState.CONNECTED:
@@ -113,9 +125,7 @@ class SlaveThread(MasterSlaveSharedThread):
             try:
                 data = self._sock.recv(1024)
                 if(len(data) > 0):
-                    self._recv(self.ALLOWED_COMMANDS, data)
+                    self._recv(self.ALLOWED_COMMANDS, data, self._sock)
                     continue
             except socket.error as e:
                 continue
-
-            super(SlaveThread, self)._process_backlog()

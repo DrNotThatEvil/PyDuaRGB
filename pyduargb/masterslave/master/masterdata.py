@@ -75,6 +75,15 @@ class MasterData(Singleton):
     def get_added_leds(self):
         return self._added_leds
 
+    def remove_slave(self, hsh):
+        self._continue_slavedata = [
+            x for x in self._continue_slavedata
+            if not x.get_data()['sock_hash'] == hsh
+        ]
+        self._calculate()
+        print(self._continue_slavedata)
+        print("Caluclated size is now: {}".format(self._added_leds))
+
     def add_slave(self, order, order_locked, data):
         if order in self._continue_slavedata:
             slavedata = self._continue_slavedata[order]

@@ -40,10 +40,10 @@ class ClientState(IntEnum):
     RECV = 2
     SEND = 3
 
-# WIP CONTINUE IMPLEMENTING CLIENT STATE 
+# WIP CONTINUE IMPLEMENTING CLIENT STATE
 
 class MasterSlaveSharedThread(threading.Thread):
-    ALLOWED_COMMANDS = ['ping', 'pong', 'quit', 'mode_req', 'mode_ack']
+    ALLOWED_COMMANDS = ['ping', 'pong', 'quit']
 
     def __init__(self, host):
         super(MasterSlaveSharedThread, self).__init__()
@@ -54,86 +54,22 @@ class MasterSlaveSharedThread(threading.Thread):
         self._sending = False
         self._send_backlog = {}
 
-        self._remote_state = ClientState.WAITING
-        self._host_state = ClientState.WAITING
-        self._requested_state = ClientState.WAITING
-
     def stop(self):
         self._stop_event.set()
 
     def stopped(self):
         return self._stop_event.is_set()
 
-    def _ping(self, extra_data):
+    def _ping(self, extra_data, socket):
         logger.info("Ping recieved. Sending pong")
-        self._send(b'PONG')
+        return b'PONG'
 
-    def _pong(self, extra_data):
+    def _pong(self, extra_data, socket):
         logger.info("Pong recieved")
 
-    def _process_backlog(self):
-        print(self._send_backlog)
-
-        if len(self._send_backlog) == 0:
-            return
-
-        #for hsh, data in self._send_backlog:
-        #    print(hsh, data)
-            ##self._send_raw(self._send_backlog[hsh][0],
-            ##               self._send_backlog[hsh][1])
-
-    def _mode_ack(self, extra_data):
-        logger.info("Remote state changed.")
-        self._host_state = self._requested_state
-
-    def _mode_req(self, extra_data):
-        state_int = int.from_bytes(extra_data, byteorder='little')
-        state = ClientState(state_int)
-
-        self._host_state = state
-        if state == ClientState.RECV:
-            self._remote_state = ClientState.SEND
-
-        if state == ClientState.WAITING:
-            self._remote_state = ClientState.WAITING
-
-        logger.info("State changed. {}".format(int(state)))
-        self._send_raw(b'MODE_ACK', None, True)
-
-    def _negotiate_state(self, state):
-        if (self._remote_state == ClientState.WAITING and
-                self._host_state == ClientState.WAITING):
-            self._host_state = ClientState.MODE_REQUESTED
-            self._remote_state = ClientState.MODE_REQUESTED
-            self._requested_state = (ClientState.SEND if state ==
-                                     ClientState.RECV
-                                     else ClientState.SEND)
-            data = int(state).to_bytes(1, byteorder='little')
-            self._send_raw(b'MODE_REQ', data, True)
-
-    def _negotiate_reset(self):
-        print(self._remote_state)
-        print(self._host_state)
-        print(self._requested_state)
-
-        if (self._remote_state == ClientState.RECV):
-            self._host_state = ClientState.MODE_REQUESTED
-            self._remote_state = ClientState.MODE_REQUESTED
-            self._requested_state = ClientState.WAITING
-            self._send_raw(b'MODE_REQ',
-                           int(ClientState.WAITING).to_bytes(
-                                1, byteorder='little'), True)
-
-    def _send_raw(self, data, extra_data, negotiate=False):
+    def _send_raw(self, data, extra_data, process=False):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
-            return
-
-        if not negotiate and self._host_state != ClientState.SEND:
-            self._negotiate_state(ClientState.RECV)
-            request = (data, extra_data)
-            if hash(request) not in self._send_backlog.keys():
-                self._send_backlog[hash(request)] = request
             return
 
         send_data = b'\x64\x75\x61\x00' + data
@@ -142,34 +78,26 @@ class MasterSlaveSharedThread(threading.Thread):
             send_data = send_data + b'\x00' + extra_data
             # Append nullbyte and extra data to the command
 
-        self._sock.send(send_data)
-        if not negotiate:
-            self._negotiate_reset()
+        if not process:
+            try:
+                return self._sock.send(send_data)
+            except socket.error as e:
+                return self._error(e)
+        return send_data
 
-    def _send(self, data, extra_data=None, negotiate=False):
-        if self._state not in [ConnectionState.LISTENING,
-                               ConnectionState.CONNECTED]:
-            return
+    def _error(self, error):
+        raise NotImplementedError("_error needs to be extended.")
 
-        if not negotiate and self._host_state != ClientState.SEND:
-            self._negotiate_state(ClientState.RECV)
-            request = (data, (extra_data.encode('UTF-8')
-                              if extra_data is not None else None))
-            if hash(request) not in self._send_backlog.keys():
-                self._send_backlog[hash(request)] = request
-            return
+    def _send(self, data, extra_data=None, process=False):
+        if extra_data is None:
+            return self._send_raw(data, None, process)
 
-        send_data = b'\x64\x75\x61\x00' + data
+        if type(extra_data) is bytes:
+            return self._send_raw(data, extra_data, process)
 
-        if extra_data is not None:
-            send_data = send_data + b'\x00' + extra_data.encode('UTF-8')
-            # Append nullbyte and extra data to the command
+        return self._send_raw(data, extra_data.encode('UTF-8'), process)
 
-        self._sock.send(send_data)
-        if not negotiate:
-            self._negotiate_reset()
-
-    def _recv(self, allowed, data):
+    def _recv(self, allowed, data, socket):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
             return
@@ -197,7 +125,7 @@ class MasterSlaveSharedThread(threading.Thread):
                 )
                 return
 
-            getattr(self, "_{}".format(comm_str))(extra_data)
+            return getattr(self, "_{}".format(comm_str))(extra_data, socket)
         except AttributeError as e:
             logger.warning(e)
             logger.warning(

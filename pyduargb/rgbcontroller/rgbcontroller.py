@@ -47,6 +47,10 @@ class RGBController(Singleton):
     def stopped(self):
         return self._stop_event.is_set()
 
+    def process_master_leds(self, pixel_bytes):
+        # Convert the leds to pixel objects.
+        print("Proscessing")
+
     def play_animation(self, duration, animation, step=1):
         # TODO implement slave led amount into playing the animation.
         start_mili = int(round(time.time() * 1000))
