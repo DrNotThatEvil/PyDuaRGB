@@ -192,17 +192,24 @@ class MasterThread(MasterSlaveSharedThread):
                     continue
 
                 try:
-                    data = s.recv(1024)
+                    data = s.recv(1)
+                    if(len(data) > 0):
+                        while b'\x3A' not in data:
+                            data += s.recv(1)
+
+                        if self._recv_header(data) is not False:
+                            body = s.recv(self._recv_header(data))
+
+                            resp = self._recv(self.ALLOWED_COMMANDS, body,
+                                              s)
+                            if resp:
+                                data = self._send(resp, None, True)
+                                self._message_queues[s].put(data)
+                                if s not in self._outputs:
+                                    self._outputs.append(s)
+                    continue
                 except socket.error:
                     pass
-                else:
-                    if data:
-                        data = self._recv(self.ALLOWED_COMMANDS, data, s)
-                        if data:
-                            data = self._send(data, None, True)
-                            self._message_queues[s].put(data)
-                            if s not in self._outputs:
-                                self._outputs.append(s)
 
             for s in writable:
                 try:

@@ -23,9 +23,11 @@ This system is offers the following features:
 * Pretty neat animations (if i say so myself)
 * Simple JSONRPC api so easy to implement in your apps!
 * Control multiple ledstrips connected to multiple Raspberry Pi's all in sync!
+* Completly Open Source LGPL Version 3
+
+Upcomming freatures:
 * Direct control api to drive the ledstrip directly so let your imagination flow!
 * Works with multiple ledstrip types! See [Supported chips](./supported_chips.md)
-* Completly Open Source LGPL Version 3
 
 ## Installation instructions
 For installation instructions please view our [Install guide](./Install_guide.md)

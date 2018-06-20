@@ -24,3 +24,14 @@ def get_animation_class(name):
         return False
 
     return ANIMATION_MAP[name]
+
+
+def get_required_params(obj):
+    if obj.__init__.__defaults__ is None:
+        return []
+
+    defaults = list(reversed(obj.__init__.__defaults__))
+    var_names = list(obj.__init__.__code__.co_varnames)
+    var_names.pop(0)
+    return [x for i, x in enumerate(reversed(var_names))
+            if not (-len(defaults) <= i < len(defaults))]

@@ -50,6 +50,7 @@ CONFIG_TYPES = {
     'master': [
         ['ip', ConfigIpType],
         ['slavecount', ConfigIntType],
+        ['disabled', ConfigIntType]
     ]
 }
 

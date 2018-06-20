@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import sys
 import socket
 import threading
 from enum import Enum, IntEnum
@@ -34,16 +34,8 @@ class ConnectionState(Enum):
     DISCONNECTED = 5
 
 
-class ClientState(IntEnum):
-    WAITING = 0
-    MODE_REQUESTED = 1
-    RECV = 2
-    SEND = 3
-
-# WIP CONTINUE IMPLEMENTING CLIENT STATE
-
 class MasterSlaveSharedThread(threading.Thread):
-    ALLOWED_COMMANDS = ['ping', 'pong', 'quit']
+    ALLOWED_COMMANDS = ['ping', 'pong']
 
     def __init__(self, host):
         super(MasterSlaveSharedThread, self).__init__()
@@ -72,11 +64,22 @@ class MasterSlaveSharedThread(threading.Thread):
                                ConnectionState.CONNECTED]:
             return
 
-        send_data = b'\x64\x75\x61\x00' + data
+        size = len(data)
+        if extra_data is not None:
+            size = len(data) + 1 + len(extra_data)
+
+        size += 2  # checksum data
+        send_data = (b'\x64\x75\x61\x00' + size.to_bytes(2, 'little')
+                     + b'\x3A' + data)
 
         if extra_data is not None:
             send_data = send_data + b'\x00' + extra_data
             # Append nullbyte and extra data to the command
+
+        checksum = sum((data))
+        if extra_data is not None:
+            checksum = sum((data + extra_data))
+        send_data = send_data + checksum.to_bytes(2, 'little')
 
         if not process:
             try:
@@ -84,9 +87,6 @@ class MasterSlaveSharedThread(threading.Thread):
             except socket.error as e:
                 return self._error(e)
         return send_data
-
-    def _error(self, error):
-        raise NotImplementedError("_error needs to be extended.")
 
     def _send(self, data, extra_data=None, process=False):
         if extra_data is None:
@@ -97,16 +97,29 @@ class MasterSlaveSharedThread(threading.Thread):
 
         return self._send_raw(data, extra_data.encode('UTF-8'), process)
 
+    def _recv_header(self, data):
+        if data[:4] != b'\x64\x75\x61\x00':
+            logger.warning("Recieved corrupted header data.")
+            print(data.hex())
+            return False
+
+        size = int.from_bytes(data[4:6], byteorder='little')
+        return size
+
     def _recv(self, allowed, data, socket):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
             return
 
-        if data[:4] != b'\x64\x75\x61\x00':
+        calc_checksum = sum(data[:-2])
+        checksum = int.from_bytes(data[-2:], byteorder='little')
+        if not calc_checksum == checksum:
             logger.warning("Recieved corrupted data.")
+            logger.info(checksum)
+            logger.info(calc_checksum)
             return
 
-        all_data = data[4:]
+        all_data = data[:-2]
         end = all_data.find(b'\x00')
         command = b''
         extra_data = b''
@@ -131,6 +144,9 @@ class MasterSlaveSharedThread(threading.Thread):
             logger.warning(
                 "slave requested invalid command: {}".format(comm_str)
             )
+
+    def _error(self, error):
+        raise NotImplementedError("_error needs to be extended.")
 
     def run(self):
         raise NotImplementedError("Run needs to be extended.")

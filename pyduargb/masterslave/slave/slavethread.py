@@ -23,6 +23,7 @@ class SlaveThread(MasterSlaveSharedThread):
         self._connection_timer = threading.Timer(
             self._retrytimer, self._connect
         )
+        self._rgbcntl = rgbcontroller.RGBController()
 
         self._connect()
 
@@ -95,6 +96,7 @@ class SlaveThread(MasterSlaveSharedThread):
             return
 
         print(leds[0])
+        self._rgbcntl.process_master_leds(tuple(leds))
 
     def stop(self):
         if self._state == ConnectionState.CONNECTED:
@@ -123,9 +125,15 @@ class SlaveThread(MasterSlaveSharedThread):
                 continue
 
             try:
-                data = self._sock.recv(1024)
+                data = self._sock.recv(1)
                 if(len(data) > 0):
-                    self._recv(self.ALLOWED_COMMANDS, data, self._sock)
-                    continue
+                    while b'\x3A' not in data:
+                        data += self._sock.recv(1)
+
+                    if self._recv_header(data) is not False:
+                        body = self._sock.recv(self._recv_header(data))
+                        self._recv(self.ALLOWED_COMMANDS, body, self._sock)
+
+                continue
             except socket.error as e:
                 continue

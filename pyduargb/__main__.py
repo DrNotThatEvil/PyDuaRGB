@@ -87,6 +87,12 @@ def main():
     is_slave = (configsys.get_option('master', 'ip') is not False)
     # TODO implement checking of all gathered config values
 
+    is_master_disabled = (configsys.get_option('master', 'disabled')
+                          is not False)
+    is_master_disabled = (True if is_master_disabled and
+                          configsys.get_option('master', 'disabled')
+                          .get_value() > 0 else False)
+
     # Setup RGBController
     rgbcntl = rgbcontroller.RGBController(
         chipconfig.get_chip_obj(),
@@ -108,7 +114,11 @@ def main():
     else:
         logger.info("Master config detected. Starting all components.")
         # instance is a master
-        ms_thread = MasterThread('', 8082)
+        if not is_master_disabled:
+            ms_thread = MasterThread('', 8082)
+        else:
+            logger.info("Master explicity disabled. Not listening to slave" +
+                        " connections")
 
         # Only masters need a animation queue
         # Setup AnimationQueue
@@ -119,25 +129,34 @@ def main():
         animation_thread = AnimationQueueThread(animation_lock)
         animation_thread.start()
 
-    ms_thread.start()
+    if ms_thread is not None:
+        ms_thread.start()
 
     def signal_handler(signal, frame):
-        ms_thread.stop()
+        if ms_thread is not None:
+            ms_thread.stop()
+
         if animation_thread is not None:
             animation_thread.stop()
+
         rgbcntl.stop()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
 
     # Setup json rpc system
-    # TODO: Decide if this is nesessary for slaves.
-    run_simple(
-        '0.0.0.0',
-        configsys.get_option('jsonrpc', 'port').get_value(),
-        application
-    )
-
+    if not is_slave:
+        run_simple(
+            '0.0.0.0',
+            configsys.get_option('jsonrpc', 'port').get_value(),
+            application
+        )
+    else:
+        while True:
+            try:
+                time.sleep(5)
+            except InterruptedError:
+                pass
 
 if __name__ == "__main__":
     main()

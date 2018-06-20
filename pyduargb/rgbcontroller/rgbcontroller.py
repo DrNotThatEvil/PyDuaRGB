@@ -22,6 +22,7 @@ import threading
 
 from ..logging import *
 from ..meta import Singleton
+from ..pixel import Pixel
 from ..chips import *
 from ..masterslave.master.masterdata import MasterData
 
@@ -49,7 +50,12 @@ class RGBController(Singleton):
 
     def process_master_leds(self, pixel_bytes):
         # Convert the leds to pixel objects.
-        print("Proscessing")
+        pixels = [Pixel({'r': x[0], 'g':x[1], 'b':x[2]}) for x in pixel_bytes]
+        if self.rgbmap != 'rgb':
+            for pixel in pixels:
+                pixel.rgbmap_translate(self.rgbmap)
+        self.chip.set_caching(False)
+        self.chip.write_pixels(tuple(pixels), self.ledcount, self.spidev)
 
     def play_animation(self, duration, animation, step=1):
         # TODO implement slave led amount into playing the animation.

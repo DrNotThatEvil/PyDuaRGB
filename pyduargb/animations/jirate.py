@@ -48,7 +48,7 @@ class Jirate(object):
         shift = math.floor(i*self.timedelay) % ledcount
         deque_brightness.rotate(shift)
 
-        return print([Pixel(self.color, x) for x in deque_brightness])
+        return tuple([Pixel(self.color, x) for x in deque_brightness])
 
     def to_json(self):
         return {
@@ -65,4 +65,10 @@ class Jirate(object):
 
     @staticmethod
     def from_json(obj):
+        if 'low' not in obj:
+            obj['low'] = 0.25
+
+        if 'bright' not in obj:
+            obj['bright'] = 1.0
+
         return Jirate(obj["color"], obj["low"], obj["bright"])

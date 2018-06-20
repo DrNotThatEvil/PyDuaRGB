@@ -32,6 +32,13 @@ CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_PATH = os.path.realpath(os.path.join(CUR_PATH, '..', '..'))
 
 
+class AnimationNotFoundError(Exception):
+    pass
+
+
+class AnimationArgumentError(Exception):
+    pass
+
 # Queue Section
 @dispatcher.add_method
 def get_animation_queue():
@@ -59,7 +66,19 @@ def get_led_count():
 # Queue manipulation section
 @dispatcher.add_method
 def add_queueitem(duration, animation, runlevel, sticky, allow_lower_runlevel):
-    animation_obj = get_animation_class(animation["name"]).from_json(animation)
+    animation_obj = get_animation_class(animation["name"])
+    if not animation_obj:
+        raise AnimationNotFoundError('The animation was not found.')
+
+    required = get_required_params(animation_obj)
+    for requirement in required:
+        if requirement not in animation:
+            raise AnimationArgumentError(
+                "Missing '{}' animation argument".format(requirement)
+            )
+
+    animation_obj = animation_obj.from_json(animation)
+
     qi = queueitem.QueueItem(
         duration,
         animation_obj,
@@ -84,25 +103,5 @@ def application(request):
     if request.method != 'POST':
         return Response('pyduargb led control', mimetype='text/plain')
 
-    data = json.loads(request.data.decode("utf-8"))
-
-    if(configsys.get_option('master', 'ip') is not False and
-        ConfigIpType.validate(
-            configsys.get_option('master', 'ip').get_value()
-    )):
-        return Response(json.dumps(
-            {
-             "jsonrpc": "2.0",
-             "error": {
-                        "code": -32001,
-                        "message": "Configured as slave no jsonrpc allowed"
-                      },
-             "id": data['id']
-            }), mimetype='application/json')
-
-    # NOTE: Removed apitoken. jsonrpc is only safe for local network anyway
-    # due to http making the apitoken useless.
-
-    response = JSONRPCResponseManager.handle(
-        json.dumps(data), dispatcher)
+    response = JSONRPCResponseManager.handle(request.data, dispatcher)
     return Response(response.json, mimetype='application/json')

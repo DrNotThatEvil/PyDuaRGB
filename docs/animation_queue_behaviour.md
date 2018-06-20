@@ -1,6 +1,6 @@
 # How the animation queue works
 As stated earlier PyDuaRGB is designed with ledstrips in mind. The `AnimationQueue` is
-a implementation desgined to work with some the quirks of ledstrips and provides some useability enhancements
+a implementation designed to work with some the quirks of ledstrips and provides some usability enhancements
 over a normal queue.
 
 ## Quriks of ledstrps
@@ -9,13 +9,13 @@ If you only send color data once the data changes the ledstrip can behave weirdl
 
 This is because noise on the wires connecting the ledstrip to the pi can sometimes
 be interpreted by the ledstrip as color data. With the effect of turning some leds to a
-different color or (as i experinced myself) having your ledstrip turn on in the middle of the night.
+different color or (as i experienced  myself) having your ledstrip turn on in the middle of the night.
 
 ### Ensuring a constant stream of data: the sticky flag
 To prevent animations from quiting `QueueItem` objects have the `sticky` flag.
 when `AnimationQueue` finishes a `QueueItem` it checks if the `sticky` flag is set
 if so it will only remove the `QueueItem` from the queue if their is more then one `QueueItem` on
-the `Queue`.
+the `AnimationQueue`.
 
 This behaviour ensures that the ledstrip has a constant stream of data.
 
@@ -34,22 +34,24 @@ If the `AnimationQueue` is not empty it will peform a check to see if the new `Q
 accepted.
 
 The check compares the `QueueItem` to be added with the `QueueItem` at the top of the queue.
-If new `QueueItem` has a higher or equal `runlevel` value it will be accepted, else it will be rejected.
+If the new `QueueItem` has a higher or equal `runlevel` value it will be accepted, else it will be rejected.
 `QueueItem` objects also have a option to allow any runlevel to surpass them using the `allow_lower_runlevel` flag.
 
 ### How is this usefull?
 Take the example mentioned above 'Ensuring the ledstrip to be off'.
-We would push a `QueueItem` with a the color black and a high runlevel to the `AnimationQueue`
+We would push a `QueueItem` with the color black and a high runlevel to the `AnimationQueue`
 this would prevent apps using lower runlevels from pushing their animations to the ledstrip. As soon as you want your ledstrip to resume normal operation you would push a `QueueItem` with a higher `runlevel` then the previous one
 and set it's `allow_lower_runlevel` flag to true. This ensures that the new `QueueItem` can be added but
-also ensures apps using lower runlevels can push animations again.
+also ensures that apps (using lower runlevels) can push animations once again.
 
 ## Design considerations
 ### Decide runlevels
-When designing your app decide how important the animations comming from your app are. Are they of LOW, MODERATE or HIGH importance? Using this decide what runlevels you find appropriate to run use for your animations. Keep in mind that users
-might want to mute your apps animations (by pushing animations with a higher runlevels) give them the ability to do so.
+When designing your app decide how important the animations coming from your app are.
+Are they of LOW, MODERATE or HIGH importance? Using this decide what runlevels you find appropriate to use for your animations. Keep in mind that users
+might want to mute your apps animations (by pushing animations with higher runlevels) give them the ability to do so.
 
 ### Keep the queue tidy
-When you push animations to the queue previous animations poped from the queue. If your app pushes notifications for example it's your apps resposibilty to restore the previously playing animation. You can do this by getting
-the current animation using the JSONRPC method `API_CALL` saving it localy and pushing it to the queue again
-after pushing your animation.
+When you push animations to the queue previous animations are pop'ed from the queue.
+If your app pushes notifications for example it's your apps responsibility  to restore the previously playing animation. You can do this by getting
+the current animation using the JSONRPC method `API_CALL` saving it locally and pushing it to the queue again
+after pushing your animation. That way the previous animation will play again after your animation.
