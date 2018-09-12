@@ -4,7 +4,6 @@ import os, configparser, logging
 from ..logging import *
 from ..meta import Singleton
 from .types import *
-from .slaveconfig import SlaveConfig
 
 logger = get_logger(__file__)
 
@@ -30,11 +29,11 @@ CONFIG_TYPES  = {
         ['apikey', ConfigStringType]
     ],
     'slaves': [
-        ['count', ConfigIntType] 
+        ['key', ConfigStringType],
     ],
     'master': [
-        ['allow', ConfigIpType],
-        ['slavekey', ConfigStringType]
+        ['ip', ConfigIpType],
+        ['key', ConfigStringType]
     ]
 }
 
@@ -42,7 +41,6 @@ class ConfigSystem(Singleton):
     def __init__(self, config_path, default_config=None):
         self.def_conf_path = os.path.join(CUR_PATH, "default.ini")
         self.config_path = config_path
-        self.slave_configs = []
 
         if (default_config is not None):
             self.def_conf_path = default_config
@@ -67,22 +65,24 @@ class ConfigSystem(Singleton):
 
         logger.info("Checking config for required paramaters...")
         if(not self._validate_required_config()):
-            raise Exception("Configruation not correct. Missing required section/value")
+            raise Exception("Configruation not correct. Missing required" + 
+                            "section/value")
 
         logger.info("Checking config value types...")
         if(not self._validate_config_values()):
             raise Exception("Could not load config.")
 
-        self._load_slaves()
         logger.info("Configuration file loaded...")
 
     def _validate_required_config(self):
         for key, value in REQUIRED.items():
-            if(key not in self.main_config.sections() and key not in self.default_config.sections):
+            if(key not in self.main_config.sections() and 
+                key not in self.default_config.sections):
                 return False
 
             for option in REQUIRED[key]: 
-                if(option not in self.main_config.options(key) and option not in self.default_config.options(key)):
+                if(option not in self.main_config.options(key) and
+                    option not in self.default_config.options(key)):
                     return False
          
         return True
@@ -98,71 +98,38 @@ class ConfigSystem(Singleton):
                 if(not key in self.main_config.options(section)):
                     continue
 
-                if(not config_type.validate(self.main_config.get(section, key))):
-                    # Option is not configured correctly. Lets log it and try to take the default value
-                    logger.warn("Config option {0} set to wrong type. Type should be '{1}'".format(key, config_type.get_type_name()))
+                if(not config_type.validate(self.main_config.get(section,
+                    key))):
+                    # Option is not configured correctly.
+                    # Lets log it and try to take the default value
+                    logger.warn(("Config option {0}.{1} set to wrong type. " +
+                            "Type should be '{2}'").format(
+                                section, key, config_type.get_type_name()
+                            ))
                     if(config_type.get_help_string() != False):
-                        logger.info("Type '{0}' help: {1}".format(config_type.get_type_name(), config_type.get_help_string()))
+                        logger.info("Type '{0}' help: {1}".format(
+                                config_type.get_type_name(),
+                                config_type.get_help_string()
+                            )
+                        )
 
-                    logger.warn("Trying to get default value for setting '{0}'".format(key))
+                    logger.warn("Trying to get default value" + 
+                                " for setting '{0}'".format(key))
 
                     if(not self.default_config.has_section(section)):
-                        logger.error("Could not load option {0} from default config".format(key))
+                        logger.error("Could not load option" + 
+                                    " {0} from default config".format(key))
                         if (section in REQUIRED.keys()):
                             return False
                         continue
                     
                     if(not self.default_config.has_option(section, key)):
-                        logger.error("Could not load option {0} from default config".format(key))
+                        logger.error("Could not load option" + 
+                        " {0} from default config".format(key))
                         if (section in REQUIRED.keys()):
                             return False
                         continue
         return True
-
-    def _load_slaves(self):
-        if(not self.main_config.has_section('slaves')):
-            return False
-        
-        if(not self.main_config.has_option('slaves', 'count')):
-            return False
-
-        config_type = ConfigIntType
-        if(not config_type.validate(self.main_config.get("slaves", "count"))):
-            logger.warn("slave count invalid, No slaves will be loaded.")
-            return False
-        
-        slave_cnt = self.main_config.getint("slaves", "count")
-        for i in range(0, slave_cnt):
-            logger.info("Getting config for slave{0}...".format(i))
-            section = "slave{0}".format(i)
-
-            if(not self.main_config.has_section(section)):
-                logger.warning("Slave{0} is not configured skipping slave.".format(i))
-                continue
-
-            if(not self.main_config.has_option(section, 'ip')):
-                logger.warning("Slave{0} ip not configured skipping slave.".format(i))
-                continue
-
-            if(not self.main_config.has_option(section, 'port')):
-                logger.warning("Slave{0} port not configured skipping slave.".format(i))
-                continue
-
-            ipType = ConfigIpType
-            ip = self.main_config.get(section, 'ip')
-            if(not ipType.validate(self.main_config.get(section, 'ip'))):
-                logger.warning("Slave{0} ip not a ip skipping slave.".format(i))
-                continue
-            
-            inttype = ConfigIntType
-            port = self.main_config.get(section, 'port')
-            if(not inttype.validate(self.main_config.get(section, 'port'))):
-                logger.warning("Slave{0} port not a int skipping slave.".format(i))
-                continue
-            
-            slave_id = len(self.slave_configs)
-            self.slave_configs.append(SlaveConfig(slave_id, ip, port))
-            logger.info("Configuration loaded for slave{0}".format(i))
 
     def get_option(self, section, option):
         config_names = ["main", "default"]
@@ -171,19 +138,23 @@ class ConfigSystem(Singleton):
 
         for x in range(len(configs)):
             if(not configs[x].has_section(section)):
-                logger.warn("Could not load section {0} from {1} config!".format(section, config_names[x]))
+                # logger.warn(("Could not load section " + 
+                #    "{0} from {1} config!").format(section, config_names[x]))
                 if(x == (len(configs)-1)):
                     return False
                 
-                logger.info("Trying to load from {0} config...".format(config_names[x+1]))
+                logger.info(("Trying to load from " + 
+                        "{0} config...").format(config_names[x+1]))
                 continue
         
             if(not configs[x].has_option(section, option)):
-                logger.warn("Could not load option {0} from {1} config!".format(option, config_names[x]))
+                logger.warn("Could not load option " +
+                        "{0} from {1} config!".format(option, config_names[x]))
                 if(x == (len(configs)-1)):
                     return False
         
-                logger.info("Trying to load from {0} config...".format(config_names[x+1]))
+                logger.info("Trying to load from " + 
+                        "{0} config...".format(config_names[x+1]))
                 continue
 
             if(section in CONFIG_TYPES):

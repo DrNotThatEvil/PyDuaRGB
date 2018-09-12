@@ -15,7 +15,10 @@ from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
 from .animationqueue import *
 from .jsonserver.jsonrpcserver import *
+from .slave.masterslavethread import MasterSlaveThread
+from .logging import *
 
+logger = get_logger(__file__)
 
 MAIN_CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
@@ -31,6 +34,18 @@ def main():
     rgbmap = configsys.get_option('main', 'rgbmap')
 
     #TODO implement checking of all gathered config values
+    if(configsys.get_option('master', 'ip') != False):
+        # We are a slave we need to connect here.
+        logger.info("Slave config detected starting slave client")
+
+    masterslave_thread = False
+    if(configsys.get_option('slaves', 'key') != False and 
+            configsys.get_option('master', 'ip') == False):
+        # We are a master start slave master system
+        logger.info("Master config detected starting master slave server")
+        masterslave_thread = MasterSlaveThread('127.0.0.1', 8082)
+        masterslave_thread.start()
+
 
     # Setup RGBController
     rgbcntl = rgbcontroller.RGBController(chipconfig.get_chip_obj(),
@@ -49,6 +64,8 @@ def main():
 
     def signal_handler(signal, frame):
         animation_thread.stop()
+        if masterslave_thread != False:
+            masterslave_thread.stop()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
