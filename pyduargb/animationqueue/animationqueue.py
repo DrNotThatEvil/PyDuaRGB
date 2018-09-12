@@ -35,7 +35,10 @@ class AnimationQueue(Singleton):
 
     def perform_task(self):
         if(len(self._queue) == 0):
-            return
+            return False
+
+        if not self._queue[0].get_ready():
+            return False
 
         queueitem = self._queue[0]
         logger.info("Starting queueitem...")

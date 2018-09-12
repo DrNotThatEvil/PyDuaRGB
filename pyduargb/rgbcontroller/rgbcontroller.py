@@ -18,8 +18,12 @@ class RGBController(Singleton):
         self.spidev = open(self.spidevstr, "wb")
         logger.info("RGBController intitalized.")
         logger.debug("RGBController chiptype: {}".format(chip.get_chipname()))
+    
+    def play_animation(self, duration, all_pixels):
+        for pixels in all_pixels:
+            self.chip.write_pixels(pixels, self.ledcount, self.spidev)
 
-    def play_animation(self, duration, animation, step=1):
+    def old_play_animation(self, duration, animation, step=1):
         #TODO implement slave led amount into playing the animation.
         start_mili = int(round(time.time() * 1000))
         for i in range(duration):
