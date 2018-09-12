@@ -1,13 +1,30 @@
+# PyduaRGB: The python daemon for your ledstrip needs.
+# Copyright (C) 2018 wilvin@wilv.in
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of GNU Lesser General Public License version 3
+# as published by the Free Software Foundation, Only version 3.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import print_function, absolute_import, unicode_literals
 
 from werkzeug.serving import run_simple
+import argparse
 import os
 import threading
 import time
 import signal
 import sys
 
-
+from .config.types import ConfigIpType
 from .config import config_system
 from . import chips
 from .rgbcontroller import rgbcontroller
@@ -15,66 +32,131 @@ from .animations import pulse
 from .animationqueue.animationqueuethread import AnimationQueueThread
 from .animationqueue import *
 from .jsonserver.jsonrpcserver import *
-from .slave.masterslavethread import MasterSlaveThread
+from .masterslave.master.masterthread import MasterThread
+from .masterslave.slave.slavethread import SlaveThread
 from .logging import *
 
-logger = get_logger(__file__)
 
 MAIN_CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIN_CUR_PATH = os.path.realpath(os.path.join(MAIN_CUR_PATH, '..'))
+logger = get_logger(__file__)
+
+
+def parse_arguments():
+    description = '''
+PyDuaRGB: the python daemon for all your ledstrip needs!
+    (c) Willmar 'DrNotThatEvil' Knikker 2018
+    Licenced under GNU LGPLv3 (see LICENCE file)
+'''
+
+    usage = 'Usage PyDuaRGB.py -h -c CONFIG'
+
+    parser = argparse.ArgumentParser(
+            description=description,
+            usage=usage,
+            formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-c', '--config',
+                        help='Specify a config file location',
+                        required=False)
+    args = vars(parser.parse_args())
+    return args
+
 
 def main():
-    #TODO implement logging in to __main__
+    args = parse_arguments()
+
+    # TODO implement logging in to __main__
+    if args['config'] is None:
+        config_file = os.path.join(MAIN_CUR_PATH, 'config.ini')
+    else:
+        config_file = args['config']
+
+    if not os.path.isfile(config_file):
+        logger.error("Config file not found. Exiting...")
+        sys.exit(1)
+        return
 
     # Gathering config options.
-    configsys = config_system.ConfigSystem(os.path.join(MAIN_CUR_PATH, 'config.ini'))
+    configsys = config_system.ConfigSystem(config_file)
+
     chipconfig = configsys.get_option('main', 'chiptype')
     leds = configsys.get_option('main', 'leds')
     spidev = configsys.get_option('main', 'spidev')
     rgbmap = configsys.get_option('main', 'rgbmap')
 
-    #TODO implement checking of all gathered config values
-    if(configsys.get_option('master', 'ip') != False):
-        # We are a slave we need to connect here.
-        logger.info("Slave config detected starting slave client")
+    is_slave = (configsys.get_option('master', 'ip') is not False)
+    # TODO implement checking of all gathered config values
 
-    masterslave_thread = False
-    if(configsys.get_option('slaves', 'key') != False and 
-            configsys.get_option('master', 'ip') == False):
-        # We are a master start slave master system
-        logger.info("Master config detected starting master slave server")
-        masterslave_thread = MasterSlaveThread('127.0.0.1', 8082)
-        masterslave_thread.start()
-
+    is_master_disabled = (configsys.get_option('master', 'disabled')
+                          is not False)
+    is_master_disabled = (True if is_master_disabled and
+                          configsys.get_option('master', 'disabled')
+                          .get_value() > 0 else False)
 
     # Setup RGBController
-    rgbcntl = rgbcontroller.RGBController(chipconfig.get_chip_obj(),
+    rgbcntl = rgbcontroller.RGBController(
+        chipconfig.get_chip_obj(),
         leds.get_value(),
         spidev.get_str_value(),
-        rgbmap.get_value()
+        rgbmap.get_value(),
+        is_slave
     )
 
-    # Setup AnimationQueue
-    queue = animationqueue.AnimationQueue()
+    ms_thread = None
+    animation_thread = None
+    # Setup slave or master networking threads
+    if is_slave:
+        logger.info("Slave config detected. Starting only slave components.")
+        # instance is slave
+        ms_thread = SlaveThread(
+            configsys.get_option('master', 'ip').get_value()
+        )
+    else:
+        logger.info("Master config detected. Starting all components.")
+        # instance is a master
+        if not is_master_disabled:
+            ms_thread = MasterThread('', 8082)
+        else:
+            logger.info("Master explicity disabled. Not listening to slave" +
+                        " connections")
 
-    # Setup animation Lock and AnimationQueueThread
-    animation_lock = threading.RLock()
-    animation_thread = AnimationQueueThread(animation_lock)
-    animation_thread.start()
+        # Only masters need a animation queue
+        # Setup AnimationQueue
+        queue = animationqueue.AnimationQueue()
+
+        # Setup animation Lock and AnimationQueueThread
+        animation_lock = threading.RLock()
+        animation_thread = AnimationQueueThread(animation_lock)
+        animation_thread.start()
+
+    if ms_thread is not None:
+        ms_thread.start()
 
     def signal_handler(signal, frame):
-        animation_thread.stop()
-        if masterslave_thread != False:
-            masterslave_thread.stop()
+        if ms_thread is not None:
+            ms_thread.stop()
+
+        if animation_thread is not None:
+            animation_thread.stop()
+
+        rgbcntl.stop()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
 
     # Setup json rpc system
-    run_simple(configsys.get_option('jsonrpc', 'allow').get_value(),
-        configsys.get_option('jsonrpc', 'port').get_value(),
-        application
-    )
+    if not is_slave:
+        run_simple(
+            '0.0.0.0',
+            configsys.get_option('jsonrpc', 'port').get_value(),
+            application
+        )
+    else:
+        while True:
+            try:
+                time.sleep(5)
+            except InterruptedError:
+                pass
 
 if __name__ == "__main__":
     main()

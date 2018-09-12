@@ -1,0 +1,43 @@
+20/06/18
+    * Master slave system is alsmost done (altho stability improvements are nessesary)
+        * Implemented Header containing message length.
+        * Implemented checksum check at the end of messages.
+        * Implemented method for handeling master data in RGBController.
+        * Implemented way for RGBController to send leds to slaves without locking.
+    * Improvements to JSONRPC server
+        * Implemented animation argument checking
+        * Implemented a few new API methods
+    * Removed: Removed jsonrpc capabilty from slave configurations.
+    * General codebase maintenence and improvements.
+    * Improvements to docs:
+        * Spelling fixes/improvements
+        * Sentence structure improvments
+        * Added documentation for new options.
+
+    General public notes:
+        I'm stil implementing some of the features promised in the documentation
+        (Slave Mirror mode for example), but for the most part all features I want
+        for the 0.1.0 release are implemented. My main focus before that point
+        is on stability improvements, code cleanup and most of all Documentation.
+
+        Secondly the test suite needs to be updated before 0.1.0.
+        But i'm comfident we can move to 0.1.0 during this summer break.
+
+
+13/06/18
+    * Working on Master slave implementation.
+    * Introduced shared network parent class for master and slave threads
+      I can now work on the slave/master implementations more quickly.
+    * Improvement: Added argparse for specifiing custom config location.
+
+06/06/18
+    * Codebase conforms to PEP8 (except tests)
+
+04/06/18
+    * Improvement: Started work porting spi to new spi_dev python module (this enables changing of the clockspeed)
+    * Improvement: Started work on chip caching to significantly improve writing performance and stability.
+    * Redesign: No more apitoken required for working with JSONRPC:
+      Since the system only runs with HTTP anyway and should not be exposed to a remote network I droped the apitoken requirement.
+    * Animations:  Added a few new animations for fun.
+    * Codebase:    General code cleanup in some places. Still needs work.
+    * Codebase:    Started on code cleanup so i can get a stable develop branch and start using feature branches.

@@ -1,12 +1,33 @@
+# PyduaRGB: The python daemon for your ledstrip needs.
+# Copyright (C) 2018 wilvin@wilv.in
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of GNU Lesser General Public License version 3
+# as published by the Free Software Foundation, Only version 3.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import print_function, absolute_import
-import os, socket
+import os
+import socket
 
 from ..chips import ALL_CHIPS, CHIP_LOOKUP
 
 CONFIG_TYPES = []
 
-#TODO: Make config types initiatable so they can be used as real usefull objects not only for validation.
-#TODO: change the validate methods to static methods since they do not really initialization
+
+# TODO: Make config types initiatable so they can be used as real usefull
+# objects not only for validation.
+# TODO: change the validate methods to static methods since they
+# do not really need initialization
+
 
 class BaseConfigType():
     def init(self):
@@ -19,6 +40,7 @@ class BaseConfigType():
     @staticmethod
     def get_help_string():
         return False
+
 
 class ConfigFileType(BaseConfigType):
     def __init__(self, value):
@@ -39,7 +61,8 @@ class ConfigFileType(BaseConfigType):
     def get_type_name():
         return "File"
 
-class ConfigStringType(BaseConfigType): 
+
+class ConfigStringType(BaseConfigType):
     def __init__(self, value):
         self.value = value
 
@@ -63,6 +86,7 @@ class ConfigStringType(BaseConfigType):
     def get_type_name():
         return "String"
 
+
 class ConfigIntType(BaseConfigType):
     def __init__(self, value):
         self.value = value
@@ -78,6 +102,7 @@ class ConfigIntType(BaseConfigType):
     def get_type_name():
         return "int"
 
+
 class RGBMapConfigType(BaseConfigType):
     def __init__(self, value):
         self.value = value.lower()
@@ -90,16 +115,17 @@ class RGBMapConfigType(BaseConfigType):
         if(len(data) != 3):
             return False
 
-        if((data.count("r")+data.count("R")) != 1 or 
-                (data.count("g")+data.count("G")) != 1 or 
+        if((data.count("r")+data.count("R")) != 1 or
+                (data.count("g")+data.count("G")) != 1 or
                 (data.count("b")+data.count("B")) != 1):
             return False
 
         return True
-   
+
     @staticmethod
     def get_type_name():
         return "RGBMap"
+
 
 class ConfigIpType(BaseConfigType):
     def __init__(self, value):
@@ -107,7 +133,7 @@ class ConfigIpType(BaseConfigType):
 
     def get_value(self):
         return self.value
-    
+
     @staticmethod
     def validate(data):
         try:
@@ -120,11 +146,11 @@ class ConfigIpType(BaseConfigType):
     def get_type_name():
         return "ip"
 
+
 class ConfigChipType(BaseConfigType):
     def __init__(self, value):
         self.string_rep = value.upper()
-        
-    
+
     def get_str_value(self):
         return self.string_rep
 
@@ -153,4 +179,11 @@ class ConfigChipType(BaseConfigType):
         return helpstr
 
 
-ALL_CONFIG_TYPES = [ConfigStringType, RGBMapConfigType, ConfigIpType, ConfigFileType, ConfigChipType, ConfigIntType]
+ALL_CONFIG_TYPES = [
+    ConfigStringType,
+    RGBMapConfigType,
+    ConfigIpType,
+    ConfigFileType,
+    ConfigChipType,
+    ConfigIntType
+]

@@ -15,3 +15,22 @@
 
 
 from __future__ import print_function, absolute_import
+import os
+
+from .types import *
+
+
+class SlaveConfig(object):
+    def __init__(self, slave_id, slave_ip, mode):
+        self.slave_id = slave_id
+        self.slave_ip = slave_ip
+        self.mode = mode
+
+    def get_slave_id(self):
+        return self.slave_id
+
+    def get_slave_ip(self):
+        return self.slave_ip
+
+    def get_slave_mode(self):
+        return self.mode

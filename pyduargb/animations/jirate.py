@@ -1,3 +1,19 @@
+# PyduaRGB: The python daemon for your ledstrip needs.
+# Copyright (C) 2018 wilvin@wilv.in
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of GNU Lesser General Public License version 3
+# as published by the Free Software Foundation, Only version 3.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import print_function, absolute_import
 from collections import deque
 import math
@@ -5,8 +21,8 @@ import math
 
 from pyduargb.pixel import Pixel
 
-class Jirate(object):
 
+class Jirate(object):
     def __init__(self, color, low=0.25, bright=1.0, timedelay=0.10):
         self.color = color
         self.low = low
@@ -14,11 +30,6 @@ class Jirate(object):
         self.timedelay = timedelay
 
     def animate_ns(self, i, duration, ledcount):
-        # animation pulses a single color 
-        # animation takes 0.40 of the duration to fade in and out. The time in the middle 
-        # the ledstrip will take to display the color statically
-
-        
         percent = i / duration
         step = (1 / 0.10)
 
@@ -32,16 +43,32 @@ class Jirate(object):
                     brightness = self.bright
 
             ledbrightness.append(brightness)
-        
+
         deque_brightness = deque(ledbrightness)
         shift = math.floor(i*self.timedelay) % ledcount
         deque_brightness.rotate(shift)
-      
-        return [Pixel(self.color, x) for x in deque_brightness]
+
+        return tuple([Pixel(self.color, x) for x in deque_brightness])
 
     def to_json(self):
-        return {"name": "jirate", "color": self.color, "low": self.low, "bright": self.bright, "timedelay": self.timedelay}
+        return {
+            "name": "jirate",
+            "color": self.color,
+            "low": self.low,
+            "bright": self.bright,
+            "timedelay": self.timedelay
+        }
+
+    @staticmethod
+    def can_be_cached():
+        return True
 
     @staticmethod
     def from_json(obj):
+        if 'low' not in obj:
+            obj['low'] = 0.25
+
+        if 'bright' not in obj:
+            obj['bright'] = 1.0
+
         return Jirate(obj["color"], obj["low"], obj["bright"])

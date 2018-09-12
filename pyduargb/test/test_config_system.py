@@ -1,3 +1,19 @@
+# PyduaRGB: The python daemon for your ledstrip needs.
+# Copyright (C) 2018 wilvin@wilv.in
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of GNU Lesser General Public License version 3
+# as published by the Free Software Foundation, Only version 3.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import print_function, absolute_import
 import os
 import pytest
@@ -22,7 +38,7 @@ def test_file_not_found():
 
 def test_default_not_found():
     with pytest.raises(IOError):
-        configsys = config_system.ConfigSystem(os.path.join(TEST_PATH, 'correct.ini'), 
+        configsys = config_system.ConfigSystem(os.path.join(TEST_PATH, 'correct.ini'),
                 os.path.join(TEST_PATH, 'non_existent.ini'))
 
 # TODO find a way to test READ access on another default_config
@@ -63,7 +79,7 @@ def test_validate_inccorrect_values_backup():
     ('main', 'rgbmap', RGBMapConfigType),
     ('main', 'leds', ConfigIntType),
     ('main', 'chiptype', ConfigChipType),
-    ('slaves', 'count', ConfigIntType), 
+    ('slaves', 'count', ConfigIntType),
     ('master', 'allow', ConfigIpType),
     ('master', 'slavekey', ConfigStringType),
 ])
@@ -71,4 +87,3 @@ def test_configtypes(section, option, conftype):
     configsys = config_system.ConfigSystem(os.path.join(TEST_PATH, 'correct.ini'))
     assert isinstance(configsys.get_option(section, option), conftype) == True
     config_system.ConfigSystem.destroy()
-
