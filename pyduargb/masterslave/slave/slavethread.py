@@ -4,18 +4,19 @@ import sys
 import json
 import time
 import statistics
+import struct
 
 from ..masterslaveshared import *
 from ...config import config_system
 from ...logging import *
-from ...scheduler.scheduler import Scheduler
+from ...scheduler.scheduler import SlaveSchedulerThread, Scheduler
 
 logger = get_logger(__file__)
 
 
 class SlaveThread(MasterSlaveSharedThread):
     ALLOWED_COMMANDS = (MasterSlaveSharedThread.ALLOWED_COMMANDS +
-                        ['quit', 'info', 'frames', 'time_res'])
+                        ['quit', 'info', 'frames', 'time_res', 'start'])
     TIMESYNC_MAX_AGE = 30
 
     def __init__(self, host):
@@ -29,14 +30,16 @@ class SlaveThread(MasterSlaveSharedThread):
         )
 
         self._scheduler = Scheduler()
+        self._scheduler_thread = SlaveSchedulerThread(self._scheduler)
+        self._scheduler_thread.start()
 
         self._rgbcntl = rgbcontroller.RGBController()
         self._send_info = False
         self._last_sync = 0
         self._sync_step = 0
         self._sync_results = []
-        self._incomplete_frame = []
-        self._fullframes = []
+        self._incomplete_frame = {}
+        self._fullframes = {}
 
         self._connect()
 
@@ -89,8 +92,8 @@ class SlaveThread(MasterSlaveSharedThread):
 
         filtered = [x for x in self._sync_results if x[0] < limit]
         offsets = [x[1] for x in filtered]
-        
-        print(sum(offsets) / len(offsets))
+       
+        self._scheduler.set_offset(sum(offsets) / len(offsets))
         self._sync_results = []
 
     def _connect(self):
@@ -128,28 +131,47 @@ class SlaveThread(MasterSlaveSharedThread):
         )
         self._connect()
 
+    def _start(self, extra_data, socket):
+        header_data = extra_data[1:]
+
+        header_end = header_data.find(b'\x3A')
+        header = header_data[:header_end].decode('UTF-8')
+        bytearr = bytearray(extra_data[header_end+2:])
+
+        starttime = float(bytearr.decode('UTF-8'))
+        frames = self._fullframes[header]
+
+        # TODO Remove old animation when new one is started 
+
+        self._scheduler_thread.add_animation(starttime, frames)
+
+
     def _frames(self, extra_data, socket):
         header_data = extra_data[1:]
 
         header_end = header_data.find(b'\x3A')
-        header = header_data[:header_end]
-        print(header)
-        return 
-        bytearr = bytearray(extra_data)
+        header = header_data[:header_end].decode('utf-8')
+        bytearr = bytearray(extra_data[header_end+2:])
 
-        leds = self._incomplete_frame
+        if header not in self._incomplete_frame:
+            self._incomplete_frame[header] = []
+        
+        if header not in self._fullframes:
+            self._fullframes[header] = []
+
+        leds = self._incomplete_frame[header]
         leds.extend([[bytearr[(i*3)], bytearr[(i*3)+1], bytearr[(i*3)+2]]
-                            for i in range(int(len(extra_data)/3))])
+                            for i in range(int(len(bytearr)/3))])
 
         configsys = config_system.ConfigSystem()
         led_count = configsys.get_option('main', 'leds').get_value()
         all_frames = [leds[x:x+led_count] for x in range(0, len(leds), led_count)]
 
-        self._fullframes.extend([x for x in all_frames if len(x) == led_count])
-        self._incomplete_frame = []
+        self._fullframes[header].extend([x for x in all_frames if len(x) == led_count])
+        self._incomplete_frame[header] = []
         for frame in all_frames:
             if len(frame) < led_count:
-                self._incomplete_frame = frame
+                self._incomplete_frame[header] = frame
 
     def _leds(self, extra_data, socket):
         bytearr = bytearray(extra_data)
@@ -163,6 +185,8 @@ class SlaveThread(MasterSlaveSharedThread):
         self._rgbcntl.process_master_leds(tuple(leds))
 
     def stop(self):
+        self._scheduler_thread.stop()
+
         if self._state == ConnectionState.CONNECTED:
             self._send(b'QUIT')
             self._state = ConnectionState.QUITING

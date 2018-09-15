@@ -16,6 +16,7 @@
 
 from __future__ import print_function, absolute_import
 import datetime
+import time
 
 from .animationqueue import *
 from ..config import config_system
@@ -86,6 +87,13 @@ class QueueItem(object):
                     pixel.rgbmap_translate(self._rgbmap)
             pixels.append(local_pixels)
         self.pixels = pixels
+
+        # TODO: Write a real implementation for this cause.. you know it's just a test
+        masterdb.write_remote_frames(0, hash(self), self.pixels)
+        
+        while masterdb.get_total_unsend_length(hash(self)) > 0:
+            time.sleep(1)
+
         self.ready = True
 
     def perform_task(self):

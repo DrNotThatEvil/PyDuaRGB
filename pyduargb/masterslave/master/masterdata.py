@@ -3,6 +3,7 @@ import threading
 import select
 import json
 import math
+import struct
 
 from enum import Enum
 
@@ -17,6 +18,7 @@ class SlaveData():
         self._order_locked = order_locked
         self._data = data
         self._led_queue = []
+        self._start_queue = {}
         self._frames_queue = {}
         self._frame_pop_count = 0
 
@@ -35,8 +37,29 @@ class SlaveData():
 
         self._frames_queue[hsh].extend(frames)
 
+    def add_start(self, hsh, start):
+        self._start_queue[hsh] = start
+
     def add_leds(self, leds):
         self._led_queue.append(leds)
+
+    def get_unsend_length(self, hsh):
+        if hsh not in self._frames_queue:
+            return 0
+        return len(self._frames_queue[hsh])
+
+    def pop_start(self):
+        send_data = bytearray(0) 
+        
+        if len(self._start_queue) > 0:
+            top_queue = list(self._start_queue)[0]
+            start = str(self._start_queue[top_queue]).encode('UTF-8')
+
+            self._start_queue.pop(top_queue)
+            send_data = (b'\x3A' + str(top_queue).encode('UTF-8') + b'\x3A' 
+                         + start)
+   
+        return send_data
 
     def pop_frame(self):
         send_data = bytearray(0) 
@@ -93,6 +116,9 @@ class MasterData(Singleton):
     def write_remote_frames(self, index, hsh, slave_frames):
         self._continue_slavedata[index].add_frames(hsh, slave_frames)
 
+    def write_start(self, index, hsh, time):
+        self._continue_slavedata[index].add_start(hsh, time)
+
     def write_remote_leds(self, leds):
         # Write the remote leds.
         working_leds = leds
@@ -104,11 +130,24 @@ class MasterData(Singleton):
             if len(working_leds) == 0:
                 break
 
+    def get_total_unsend_length(self, hsh):
+        total = 0
+        for sd in self._continue_slavedata:
+            total += sd.get_unsend_length(hsh)
+        return total
+
     def get_send_data(self, hsh):
         for sd in self._continue_slavedata:
             data = sd.get_data()
             if hsh == data['sock_hash']:
                 return sd.pop_frame()
+        return bytearray(0)
+
+    def get_start_send_data(self, hsh):
+        for sd in self._continue_slavedata:
+            data = sd.get_data()
+            if hsh == data['sock_hash']:
+                return sd.pop_start()
         return bytearray(0)
 
     def get_last_index(self):

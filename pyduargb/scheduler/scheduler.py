@@ -16,6 +16,7 @@
 from __future__ import print_function, absolute_import, unicode_literals
 
 import time
+import threading
 
 from ..masterslave.master.masterdata import MasterData
 from ..rgbcontroller import rgbcontroller
@@ -24,12 +25,54 @@ from ..logging import *
 logger = get_logger(__file__)
 masterdb = MasterData()
 
+
+class SlaveSchedulerThread(threading.Thread):
+    def __init__(self, scheduler): 
+        super(SlaveSchedulerThread, self).__init__()
+        self._scheduler = scheduler
+        self._stop_event = threading.Event()
+        self._animations = []
+   
+    def add_animation(self, start_time, frames):
+        self._animations.append([start_time, frames])
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
+
+    def run(self):
+        while(not self.stopped()):
+            if self.stopped():
+                break
+
+            if len(self._animations) > 0:
+                animation = self._animations.pop(0)
+
+                logger.debug("Starting item at:{0}".format(animation[0]))
+                now = self._scheduler.time()
+                while now < animation[0]:
+                    now = self._scheduler.time()
+                
+                logger.debug("Starting item...")
+                rgbcontrol = rgbcontroller.RGBController()
+                
+                for frame in animation[1]:
+                    rgbcontrol.display_frame(frame)
+
 class Scheduler(object):
     START_DELAY = 5
 
     def __init__(self):
-        pass
-    
+        self._offset = 0
+ 
+    def set_offset(self, offset):
+        self._offset = offset
+
+    def time(self):
+        return time.time() + self._offset
+
     def start(self, task):
         # Select a start time.
         # Send start time to slaves
@@ -39,6 +82,8 @@ class Scheduler(object):
 
         now = time.time()
         start_time = now + Scheduler.START_DELAY
+        masterdb.write_start(0, hash(task), start_time)
+
         logger.debug("Starting item at:{0}".format(start_time))
 
         # TODO allow this to be stopped.. incase of cntl+c
@@ -48,7 +93,6 @@ class Scheduler(object):
         logger.debug("Starting item...")
         rgbcontrol = rgbcontroller.RGBController()
 
-        masterdb.write_remote_frames(0, hash(task), frames)
         # Start the animation. 
         for frame in frames:
             rgbcontrol.display_frame(frame)

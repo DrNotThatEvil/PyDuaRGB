@@ -127,7 +127,7 @@ class MasterThread(MasterSlaveSharedThread):
 
     def _time_req(self, extra_data, socket):
         send_time = float(extra_data.decode('UTF-8'))
-        data = self._send(b'TIME_RES', json.dumps([send_time, time.time()+6]), 
+        data = self._send(b'TIME_RES', json.dumps([send_time, time.time()]), 
                           True)
         self._message_queues[socket].put(data)
         if socket not in self._outputs:
@@ -157,6 +157,13 @@ class MasterThread(MasterSlaveSharedThread):
             led_bytes = masterdb.get_send_data(hash(socket))
             if(len(led_bytes) > 0):
                 data = self._send(b'FRAMES', bytes(led_bytes), True)
+                self._message_queues[socket].put(data)
+                if socket not in self._outputs:
+                    self._outputs.append(socket)
+        
+            led_bytes = masterdb.get_start_send_data(hash(socket))
+            if(len(led_bytes) > 0):
+                data = self._send(b'START', bytes(led_bytes), True)
                 self._message_queues[socket].put(data)
                 if socket not in self._outputs:
                     self._outputs.append(socket)
