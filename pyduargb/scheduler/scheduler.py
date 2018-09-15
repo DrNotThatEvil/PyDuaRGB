@@ -48,7 +48,7 @@ class SlaveSchedulerThread(threading.Thread):
                 break
 
             if len(self._animations) > 0:
-                animation = self._animations
+                animation = self._animations[0]
 
                 logger.debug("Starting item at:{0}".format(animation[0]))
                 now = self._scheduler.time()
