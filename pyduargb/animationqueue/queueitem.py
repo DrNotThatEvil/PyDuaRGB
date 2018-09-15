@@ -86,7 +86,7 @@ class QueueItem(object):
         pixels = []
         translated_pixels = []
         for i in range(self.duration):
-            local_pixels = self.animation.animate_ns(i, self.duration, self._ledcount)
+            local_pixels = list(self.animation.animate_ns(i, self.duration, self._ledcount))
             local_trans = local_pixels.copy()
             pixels.append(local_pixels)
 
@@ -95,8 +95,8 @@ class QueueItem(object):
                     pixel.translated_pixels(self._rgbmap)
                 translated_pixels.append(local_trans)
 
-        self.translated_pixels = translated_pixels
-        self.pixels = pixels
+        self.translated_pixels = tuple(translated_pixels)
+        self.pixels = tuple(pixels)
 
         # TODO: Write a real implementation for this cause.. you know it's just a test
         masterdb.write_remote_frames(0, hash(self), self.pixels)
