@@ -94,6 +94,8 @@ class QueueItem(object):
                 for pixel in local_trans:
                     pixel.rgbmap_translate(self._rgbmap)
                 translated_pixels.append(local_trans)
+            else:
+                translated_pixels.append(local_pixels)
 
         self.translated_pixels = translated_pixels
         self.pixels = pixels
