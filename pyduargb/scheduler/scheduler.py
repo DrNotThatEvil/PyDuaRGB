@@ -79,7 +79,6 @@ class Scheduler(object):
         # Start the animation.
 
         frames = task.get_translated_frames()
-        print(frames)
 
         now = time.time()
         start_time = now + Scheduler.START_DELAY

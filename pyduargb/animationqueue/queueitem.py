@@ -95,8 +95,8 @@ class QueueItem(object):
                     pixel.rgbmap_translate(self._rgbmap)
                 translated_pixels.append(local_trans)
 
-        self.translated_pixels = tuple(translated_pixels)
-        self.pixels = tuple(pixels)
+        self.translated_pixels = translated_pixels
+        self.pixels = pixels
 
         # TODO: Write a real implementation for this cause.. you know it's just a test
         masterdb.write_remote_frames(0, hash(self), self.pixels)
