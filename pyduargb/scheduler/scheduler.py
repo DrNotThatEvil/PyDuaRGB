@@ -78,7 +78,7 @@ class Scheduler(object):
         # Send start time to slaves
         # Start the animation.
 
-        frames = task.get_frames()
+        frames = task.get_translated_frames()
 
         now = time.time()
         start_time = now + Scheduler.START_DELAY

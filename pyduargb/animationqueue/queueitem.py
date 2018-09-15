@@ -35,6 +35,7 @@ class QueueItem(object):
         self.ready = False
         self.being_computed = False
         self.pixels = []
+        self.translated_pixels = []
         configsys = config_system.ConfigSystem()
         self._ledcount = configsys.get_option('main', 'leds').get_value()
         self._rgbmap = configsys.get_option('main', 'rgbmap').get_value()
@@ -64,6 +65,9 @@ class QueueItem(object):
         # TODO rename the variable to frames since it's better
         return self.pixels
 
+    def get_translated_frames(self):
+        return self.translated_pixels
+
     def check_queue_permissions(self, queueitem):
         if(self.allow_lower_runlevel):
             return True
@@ -80,12 +84,18 @@ class QueueItem(object):
 
         self.being_computed = True
         pixels = []
+        translated_pixels = []
         for i in range(self.duration):
             local_pixels = self.animation.animate_ns(i, self.duration, self._ledcount)
-            if self._rgbmap != 'rgb':
-                for pixel in local_pixels:
-                    pixel.rgbmap_translate(self._rgbmap)
+            local_trans = local_pixels.copy()
             pixels.append(local_pixels)
+
+            if not self._rgbmap == "rgb":
+                for pixel in local_trans:
+                    pixel.translated_pixels(self._rgbmap)
+                translated_pixels.append(local_trans)
+
+        self.translated_pixels = translated_pixels
         self.pixels = pixels
 
         # TODO: Write a real implementation for this cause.. you know it's just a test
