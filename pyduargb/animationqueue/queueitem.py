@@ -92,7 +92,7 @@ class QueueItem(object):
 
             if not self._rgbmap == "rgb":
                 for pixel in local_trans:
-                    pixel.translated_pixels(self._rgbmap)
+                    pixel.rgbmap_translate(self._rgbmap)
                 translated_pixels.append(local_trans)
 
         self.translated_pixels = tuple(translated_pixels)
