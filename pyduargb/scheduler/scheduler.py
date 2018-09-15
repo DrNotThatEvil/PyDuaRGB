@@ -33,8 +33,8 @@ class SlaveSchedulerThread(threading.Thread):
         self._stop_event = threading.Event()
         self._animations = []
    
-    def add_animation(self, start_time, frames):
-        self._animations.append([start_time, frames])
+    def add_animation(self, start_time, frames, repeat):
+        self._animations.append([start_time, frames, repeat])
 
     def stop(self):
         self._stop_event.set()
@@ -48,7 +48,7 @@ class SlaveSchedulerThread(threading.Thread):
                 break
 
             if len(self._animations) > 0:
-                animation = self._animations.pop(0)
+                animation = self._animations
 
                 logger.debug("Starting item at:{0}".format(animation[0]))
                 now = self._scheduler.time()
@@ -61,8 +61,14 @@ class SlaveSchedulerThread(threading.Thread):
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
 
+                if not self._animations[2]:
+                    self._animations.pop(0)
+                else:
+                    if len(self._animations) > 1:
+                        self._animations.pop(0)
+
 class Scheduler(object):
-    START_DELAY = 5
+    START_DELAY = 2
 
     def __init__(self):
         self._offset = 0

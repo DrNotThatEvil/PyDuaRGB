@@ -139,12 +139,13 @@ class SlaveThread(MasterSlaveSharedThread):
         header = header_data[:header_end].decode('UTF-8')
         bytearr = bytearray(extra_data[header_end+2:])
 
-        starttime = float(bytearr.decode('UTF-8'))
+        startdata = json.loads(bytearr.decode('UTF-8'))
         frames = self._fullframes[header]
 
         # TODO Remove old animation when new one is started 
 
-        self._scheduler_thread.add_animation(starttime, frames)
+        self._scheduler_thread.add_animation(startdata['start'], frames,
+                                             startdata['repeat'])
 
 
     def _frames(self, extra_data, socket):

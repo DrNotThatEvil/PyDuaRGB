@@ -37,8 +37,8 @@ class SlaveData():
 
         self._frames_queue[hsh].extend(frames)
 
-    def add_start(self, hsh, start):
-        self._start_queue[hsh] = start
+    def add_start(self, hsh, start, repeat=False):
+        self._start_queue[hsh] = {"start":start, "repeat": repeat}
 
     def add_leds(self, leds):
         self._led_queue.append(leds)
@@ -53,7 +53,7 @@ class SlaveData():
         
         if len(self._start_queue) > 0:
             top_queue = list(self._start_queue)[0]
-            start = str(self._start_queue[top_queue]).encode('UTF-8')
+            start = json.dumps(self._start_queue[top_queue]).encode('UTF-8')
 
             self._start_queue.pop(top_queue)
             send_data = (b'\x3A' + str(top_queue).encode('UTF-8') + b'\x3A' 
