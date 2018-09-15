@@ -95,4 +95,4 @@ class Scheduler(object):
 
         # Start the animation. 
         for frame in frames:
-            rgbcontrol.display_frame(frame)
+            rgbcontrol.display_frame(tuple(frame))
