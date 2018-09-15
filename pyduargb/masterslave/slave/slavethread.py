@@ -7,6 +7,7 @@ import statistics
 import struct
 
 from ..masterslaveshared import *
+from ...pixel import Pixel
 from ...config import config_system
 from ...logging import *
 from ...scheduler.scheduler import SlaveSchedulerThread, Scheduler
@@ -166,8 +167,10 @@ class SlaveThread(MasterSlaveSharedThread):
         configsys = config_system.ConfigSystem()
         led_count = configsys.get_option('main', 'leds').get_value()
         all_frames = [leds[x:x+led_count] for x in range(0, len(leds), led_count)]
+        unproccesed_frames = [x for x in all_frames if len(x) == led_count]
+        processed_frames = [[Pixel({'r': x[0], 'g':x[1], 'b':x[2]}) for x in frame] for frame in unproccesed_frames]
 
-        self._fullframes[header].extend([x for x in all_frames if len(x) == led_count])
+        self._fullframes[header].extend(processed_frames)
         self._incomplete_frame[header] = []
         for frame in all_frames:
             if len(frame) < led_count:

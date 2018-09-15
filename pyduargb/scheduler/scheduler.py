@@ -59,7 +59,7 @@ class SlaveSchedulerThread(threading.Thread):
                 rgbcontrol = rgbcontroller.RGBController()
                 
                 for frame in animation[1]:
-                    rgbcontrol.display_frame(frame)
+                    rgbcontrol.display_frame(tuple(frame))
 
 class Scheduler(object):
     START_DELAY = 5
