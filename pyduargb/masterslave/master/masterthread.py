@@ -71,7 +71,7 @@ class Slave():
 
 class MasterThread(MasterSlaveSharedThread):
     ALLOWED_COMMANDS = (MasterSlaveSharedThread.ALLOWED_COMMANDS +
-                        ['quit', 'return_info'])
+                        ['quit', 'return_info', 'time_req'])
 
     def __init__(self, host, port):
         super(MasterThread, self).__init__(host)
@@ -125,6 +125,14 @@ class MasterThread(MasterSlaveSharedThread):
             if client not in self._outputs:
                 self._outputs.append(client)
 
+    def _time_req(self, extra_data, socket):
+        send_time = float(extra_data.decode('UTF-8'))
+        data = self._send(b'TIME_RES', json.dumps([send_time, time.time()+6]), 
+                          True)
+        self._message_queues[socket].put(data)
+        if socket not in self._outputs:
+            self._outputs.append(socket)
+
     def _return_info(self, extra_data, socket):
         if socket in self._slaves_no_info:
             slave = self._slaves_no_info[socket]
@@ -148,7 +156,7 @@ class MasterThread(MasterSlaveSharedThread):
         for socket in self._slaves.keys():
             led_bytes = masterdb.get_send_data(hash(socket))
             if(len(led_bytes) > 0):
-                data = self._send(b'LEDS', bytes(led_bytes), True)
+                data = self._send(b'FRAMES', bytes(led_bytes), True)
                 self._message_queues[socket].put(data)
                 if socket not in self._outputs:
                     self._outputs.append(socket)
@@ -198,10 +206,11 @@ class MasterThread(MasterSlaveSharedThread):
                             data += s.recv(1)
 
                         if self._recv_header(data) is not False:
-                            body = s.recv(self._recv_header(data))
+                            header_data = self._recv_header(data)
+                            body = s.recv(header_data[0])
 
                             resp = self._recv(self.ALLOWED_COMMANDS, body,
-                                              s)
+                                              header_data[1], s)
                             if resp:
                                 data = self._send(resp, None, True)
                                 self._message_queues[s].put(data)

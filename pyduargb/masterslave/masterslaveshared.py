@@ -65,21 +65,31 @@ class MasterSlaveSharedThread(threading.Thread):
             return
 
         size = len(data)
+
         if extra_data is not None:
             size = len(data) + 1 + len(extra_data)
 
-        size += 2  # checksum data
-        send_data = (b'\x64\x75\x61\x00' + size.to_bytes(2, 'little')
+        checksum = sum((data))
+        if extra_data is not None:
+            checksum = sum((data + extra_data))
+
+        size += (checksum.bit_length() + 7) // 8  # checksum data
+
+        send_data = (b'\x64\x75\x61\x00'
+                     + ((checksum.bit_length() + 7) // 8).to_bytes(1, 'little')
+                     + b'\x00' + ((size.bit_length() + 7) // 8).to_bytes(1, 'little')
+                     + b'\x00' + size.to_bytes((size.bit_length() + 7)//8, 'little')
                      + b'\x3A' + data)
+
+        # Header + checksum_bytes + 00 + size_bytes + 00 + size + : + data 
 
         if extra_data is not None:
             send_data = send_data + b'\x00' + extra_data
             # Append nullbyte and extra data to the command
 
-        checksum = sum((data))
-        if extra_data is not None:
-            checksum = sum((data + extra_data))
-        send_data = send_data + checksum.to_bytes(2, 'little')
+        send_data = send_data + checksum.to_bytes(
+                                                  (checksum.bit_length()+7)//8, 
+                                                  'little')
 
         if not process:
             try:
@@ -100,26 +110,33 @@ class MasterSlaveSharedThread(threading.Thread):
     def _recv_header(self, data):
         if data[:4] != b'\x64\x75\x61\x00':
             logger.warning("Recieved corrupted header data.")
-            print(data.hex())
             return False
 
-        size = int.from_bytes(data[4:6], byteorder='little')
-        return size
+        size_byte_size = data[6]
+        size_begin_byte = 8
+        size_end = size_begin_byte + size_byte_size
 
-    def _recv(self, allowed, data, socket):
+        size = int.from_bytes(data[size_begin_byte:size_end], byteorder='little')
+        checksum_byte_size = data[4]
+        
+        
+        return (size, checksum_byte_size)
+
+    def _recv(self, allowed, data, checksum_size, socket):
         if self._state not in [ConnectionState.LISTENING,
                                ConnectionState.CONNECTED]:
             return
 
-        calc_checksum = sum(data[:-2])
-        checksum = int.from_bytes(data[-2:], byteorder='little')
+        calc_checksum = sum(data[:-checksum_size])
+        checksum = int.from_bytes(data[-checksum_size:], byteorder='little')
         if not calc_checksum == checksum:
             logger.warning("Recieved corrupted data.")
             logger.info(checksum)
             logger.info(calc_checksum)
             return
 
-        all_data = data[:-2]
+
+        all_data = data[:-checksum_size]
         end = all_data.find(b'\x00')
         command = b''
         extra_data = b''

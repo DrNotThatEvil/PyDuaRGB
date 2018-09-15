@@ -19,11 +19,15 @@ from __future__ import print_function, absolute_import
 from .queueitem import *
 from ..logging import *
 from ..meta import Singleton
+from ..scheduler.scheduler import Scheduler
+
+logger = get_logger(__file__)
 
 
 class AnimationQueue(Singleton):
     def __init__(self):
         self._queue = []
+        self._scheduler = Scheduler()
 
     def get_queue(self):
         return self._queue
@@ -60,9 +64,12 @@ class AnimationQueue(Singleton):
             return False
 
         queueitem = self._queue[0]
-        logger.info("Starting queueitem...")
-        queueitem.perform_task()
+        logger.info("Scheduling queueitem...")
+        # queueitem.perform_task()
+        self._scheduler.start(self._queue[0])
+
         logger.info("Finished queueitem...")
+        return True
 
     def item_done(self):
         if(len(self._queue) == 0):

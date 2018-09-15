@@ -32,6 +32,7 @@ class QueueItem(object):
         self.sticky = sticky
         self.allow_lower_runlevel = allow_lower_runlevel 
         self.ready = False
+        self.being_computed = False
         self.pixels = []
         configsys = config_system.ConfigSystem()
         self._ledcount = configsys.get_option('main', 'leds').get_value()
@@ -52,8 +53,15 @@ class QueueItem(object):
     def get_allow_lower_runlevel(self):
         return self.allow_lower_runlevel
 
+    def get_being_computed(self):
+        return self.being_computed
+
     def get_ready(self):
         return self.ready
+
+    def get_frames(self):
+        # TODO rename the variable to frames since it's better
+        return self.pixels
 
     def check_queue_permissions(self, queueitem):
         if(self.allow_lower_runlevel):
@@ -66,9 +74,10 @@ class QueueItem(object):
     
     def calculate_task(self):
         """Calculate the pixels for this queueitem"""
-        if self.ready:
+        if self.ready or self.being_computed:
             return
 
+        self.being_computed = True
         pixels = []
         for i in range(self.duration):
             local_pixels = self.animation.animate_ns(i, self.duration, self._ledcount)
@@ -80,10 +89,15 @@ class QueueItem(object):
         self.ready = True
 
     def perform_task(self):
+        if not self.ready:
+            return False
+
+        # TODO move this use Scheduler.
+        # TODO Is this method needed? 
+
         rgbcntl = RGBController()
-        # rgb controller is a singleton
-        # this is so i don't have to keep passing classes around
         rgbcntl.play_animation(self.duration, self.pixels)
+        return True
 
     def to_json(self):
         return {

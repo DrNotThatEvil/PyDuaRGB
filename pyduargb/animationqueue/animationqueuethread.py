@@ -36,8 +36,10 @@ class AnimationComputeThread(threading.Thread):
     def run(self):
         self._queueitem.calculate_task()
 
+
 class AnimationQueueThread(threading.Thread):
     MAX_CALC_THREADS = 3
+
     def __init__(self, animation_lock):
         super(AnimationQueueThread, self).__init__()
 
@@ -57,10 +59,11 @@ class AnimationQueueThread(threading.Thread):
                 break
 
             queue = AnimationQueue()
-            compute_queue = [ x for x in queue.get_queue() 
-                              if not x.get_ready() ]
-            self._calc_threads = [ x for x in self._calc_threads
-                                   if x.is_alive() ]
+            compute_queue = [x for x in queue.get_queue() 
+                             if not x.get_ready() and 
+                             not x.get_being_computed()]
+            self._calc_threads = [x for x in self._calc_threads
+                                  if x.is_alive()]
 
             for x in compute_queue:
                 if (len(self._calc_threads) < 

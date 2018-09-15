@@ -1,3 +1,61 @@
+13/09/18
+    General public notes:
+
+        The current animation pipeline looks like this:
+        * brackets indicate a thread.
+
+        Queueitem ---> AnimationQueue ---> (AnimationQueueThread
+                  ---> RGBController ---> Chip ---> Ledstrip)
+                                    \
+                                     (---> Slave ---> RGBController ---> *)
+
+        A Queueitem gets added to the AnimationQueue
+        This queueitem gets picked up by the AnimationQueueThread this 
+        single thread moves it to the RGBController wich computes the pixel data
+        part of this data gets mapped to rgbmap and send to the Chip 
+        any extra pixels get send to the slaves to displayed their.
+
+        Sadly this pipeline is intoduces to much delay when Slaves are used.
+        When the AnimationQueue has it's pixel data it tells the Thread responsible 
+        for Master to slave communication about the data but moves on.
+        Slaves are theirfore way behind the current frame on the Master this is not 
+        acceptable in my opinion.
+
+        Therefor a new pipeline is going to be used.
+        It will introduce a few new components to the system namely a scheduler.
+
+                                              ---> (ComputeThread ---> Slave)*
+                                             /
+        Queueitem ---> AnimationQueue ---> (AnimationQueueThread 
+                                             | ---> Scheduler ---> RGBController --> chip --> ledstrip )
+                                                        \
+                                                          ---> Slave ---> * 
+
+        This pipeline looks more complex but in general removes responsiblities
+        form existing components. 
+
+        First A Queueitem gets added.
+        The AnimationQueueThread notices the new Queueitem but since it's not computed yet
+        it spawns a ComputeThread to compute it.
+        The ComputeThread computes all frames of the animation and saves them
+        it also sends relevant frame data to the slaves to store for later use.
+        Once computed it can be executed by the AnimationQueueThread so it gives
+        the animation to the scheduler. The scheduler picks a time to start the animation 
+        and notifies the slaves of this time. The scheduler starts the animation 
+        at the defined time. 
+
+        Slaves in this pipeline recieve all frames of the animation they that's 
+        about the be played before hand. It will store the frames and will wait 
+        for the start time to be specified once it knows this it can start the 
+        animation at same time as the Master.
+
+        
+
+
+        
+                        
+
+
 20/06/18
     * Master slave system is alsmost done (altho stability improvements are nessesary)
         * Implemented Header containing message length.

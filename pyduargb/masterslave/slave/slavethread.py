@@ -2,17 +2,21 @@ import socket
 import threading
 import sys
 import json
+import time
+import statistics
 
 from ..masterslaveshared import *
 from ...config import config_system
 from ...logging import *
+from ...scheduler.scheduler import Scheduler
 
 logger = get_logger(__file__)
 
 
 class SlaveThread(MasterSlaveSharedThread):
     ALLOWED_COMMANDS = (MasterSlaveSharedThread.ALLOWED_COMMANDS +
-                        ['quit', 'info', 'leds'])
+                        ['quit', 'info', 'frames', 'time_res'])
+    TIMESYNC_MAX_AGE = 30
 
     def __init__(self, host):
         super(SlaveThread, self).__init__(host)
@@ -23,7 +27,16 @@ class SlaveThread(MasterSlaveSharedThread):
         self._connection_timer = threading.Timer(
             self._retrytimer, self._connect
         )
+
+        self._scheduler = Scheduler()
+
         self._rgbcntl = rgbcontroller.RGBController()
+        self._send_info = False
+        self._last_sync = 0
+        self._sync_step = 0
+        self._sync_results = []
+        self._incomplete_frame = []
+        self._fullframes = []
 
         self._connect()
 
@@ -50,6 +63,35 @@ class SlaveThread(MasterSlaveSharedThread):
             "leds":
                 configsys.get_option('main', 'leds').get_value()
         }))
+        self._send_info = True
+
+    def _time_res(self, extra_data, socket):
+        time_data = json.loads(extra_data.decode('UTF-8'))
+        send_time = time_data[0]
+        server_time = time_data[1]
+        end = time.time()
+
+        roundtrip = end - send_time
+        offset = server_time - end + roundtrip / 2
+        result = (roundtrip, offset)
+        self._sync_results.append(result)
+
+        if self._sync_step < 5:
+            time.sleep(1)
+            self._send(b'TIME_REQ', extra_data=str(time.time()))
+            self._sync_step = self._sync_step + 1
+        else:
+            self._calculate_time_sync()
+    
+    def _calculate_time_sync(self):
+        roundtrips = [result[0] for result in self._sync_results]
+        limit = statistics.median(roundtrips) + statistics.stdev(roundtrips)
+
+        filtered = [x for x in self._sync_results if x[0] < limit]
+        offsets = [x[1] for x in filtered]
+        
+        print(sum(offsets) / len(offsets))
+        self._sync_results = []
 
     def _connect(self):
         try:
@@ -86,6 +128,29 @@ class SlaveThread(MasterSlaveSharedThread):
         )
         self._connect()
 
+    def _frames(self, extra_data, socket):
+        header_data = extra_data[1:]
+
+        header_end = header_data.find(b'\x3A')
+        header = header_data[:header_end]
+        print(header)
+        return 
+        bytearr = bytearray(extra_data)
+
+        leds = self._incomplete_frame
+        leds.extend([[bytearr[(i*3)], bytearr[(i*3)+1], bytearr[(i*3)+2]]
+                            for i in range(int(len(extra_data)/3))])
+
+        configsys = config_system.ConfigSystem()
+        led_count = configsys.get_option('main', 'leds').get_value()
+        all_frames = [leds[x:x+led_count] for x in range(0, len(leds), led_count)]
+
+        self._fullframes.extend([x for x in all_frames if len(x) == led_count])
+        self._incomplete_frame = []
+        for frame in all_frames:
+            if len(frame) < led_count:
+                self._incomplete_frame = frame
+
     def _leds(self, extra_data, socket):
         bytearr = bytearray(extra_data)
         leds = [[bytearr[(i*3)], bytearr[(i*3)+1], bytearr[(i*3)+2]]
@@ -95,7 +160,6 @@ class SlaveThread(MasterSlaveSharedThread):
             logger.info("Recieved to many leds")
             return
 
-        print(leds[0])
         self._rgbcntl.process_master_leds(tuple(leds))
 
     def stop(self):
@@ -107,7 +171,7 @@ class SlaveThread(MasterSlaveSharedThread):
         if self._state == ConnectionState.CONNECTING:
             self._connection_timer.cancel()
         super(SlaveThread, self).stop()
-
+    
     def run(self):
         while(not self.stopped()):
             if self.stopped():
@@ -124,6 +188,13 @@ class SlaveThread(MasterSlaveSharedThread):
             if self._state != ConnectionState.CONNECTED:
                 continue
 
+            sync_delta = time.time() - self._last_sync
+            if sync_delta > SlaveThread.TIMESYNC_MAX_AGE:
+                # START SYNCING 
+                self._send(b'TIME_REQ', extra_data=str(time.time()))
+                self._sync_step = 0
+                self._last_sync = time.time()
+
             try:
                 data = self._sock.recv(1)
                 if(len(data) > 0):
@@ -131,8 +202,10 @@ class SlaveThread(MasterSlaveSharedThread):
                         data += self._sock.recv(1)
 
                     if self._recv_header(data) is not False:
-                        body = self._sock.recv(self._recv_header(data))
-                        self._recv(self.ALLOWED_COMMANDS, body, self._sock)
+                        header_data = self._recv_header(data)
+                        body = self._sock.recv(header_data[0])
+                        self._recv(self.ALLOWED_COMMANDS, body, header_data[1],
+                                   self._sock)
 
                 continue
             except socket.error as e:

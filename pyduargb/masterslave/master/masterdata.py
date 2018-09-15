@@ -2,6 +2,7 @@ import socket
 import threading
 import select
 import json
+import math
 
 from enum import Enum
 
@@ -16,6 +17,8 @@ class SlaveData():
         self._order_locked = order_locked
         self._data = data
         self._led_queue = []
+        self._frames_queue = {}
+        self._frame_pop_count = 0
 
     def get_order(self):
         return self._order
@@ -26,8 +29,44 @@ class SlaveData():
     def get_data(self):
         return self._data
 
+    def add_frames(self, hsh, frames):
+        if hsh not in self._frames_queue:
+            self._frames_queue[hsh] = []
+
+        self._frames_queue[hsh].extend(frames)
+
     def add_leds(self, leds):
         self._led_queue.append(leds)
+
+    def pop_frame(self):
+        send_data = bytearray(0) 
+         
+        if len(self._frames_queue) > 0:
+            top_queue = list(self._frames_queue)[0]
+            
+            max_bytes = 2048
+            animation = self._frames_queue[top_queue]
+            frame_count = len(animation)
+            byte_count = frame_count * 50 * 3
+            bytes_divided = math.ceil(byte_count / max_bytes)
+
+            all_frame_bytes = [x for frames in animation for x in frames]
+            offset = self._frame_pop_count * math.floor(max_bytes / 3)
+
+            for x in range(math.floor(2048/3)):
+                if offset+x >= len(all_frame_bytes):
+                    break
+                send_data.extend(all_frame_bytes[offset+x].get_bytearray(3))
+            
+            self._frame_pop_count = self._frame_pop_count + 1
+            if self._frame_pop_count > bytes_divided:
+                self._frames_queue.pop(top_queue)
+                self._frame_pop_count = 0
+
+            send_data = (b'\x3A' + str(top_queue).encode('UTF-8') + b'\x3A' 
+                         + send_data)
+
+        return send_data
 
     def pop_leds(self):
         send_array = bytearray()
@@ -51,6 +90,9 @@ class MasterData(Singleton):
             if sops['mode'] == 'continue':
                 self._added_leds = self._added_leds + sops['leds']
 
+    def write_remote_frames(self, index, hsh, slave_frames):
+        self._continue_slavedata[index].add_frames(hsh, slave_frames)
+
     def write_remote_leds(self, leds):
         # Write the remote leds.
         working_leds = leds
@@ -66,7 +108,7 @@ class MasterData(Singleton):
         for sd in self._continue_slavedata:
             data = sd.get_data()
             if hsh == data['sock_hash']:
-                return sd.pop_leds()
+                return sd.pop_frame()
         return bytearray(0)
 
     def get_last_index(self):
