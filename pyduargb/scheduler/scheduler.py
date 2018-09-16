@@ -61,7 +61,7 @@ class SlaveSchedulerThread(threading.Thread):
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
 
-                if not self._animations[2]:
+                if not animation[2]:
                     self._animations.pop(0)
                 else:
                     if len(self._animations) > 1:
