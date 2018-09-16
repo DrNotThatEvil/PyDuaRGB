@@ -144,7 +144,8 @@ class SlaveThread(MasterSlaveSharedThread):
 
         # TODO Remove old animation when new one is started 
 
-        self._scheduler_thread.add_animation(startdata['start'], frames,
+        self._scheduler_thread.add_animation(header,
+                                             startdata['start'], frames,
                                              startdata['repeat'])
 
 

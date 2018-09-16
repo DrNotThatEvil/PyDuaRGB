@@ -31,10 +31,11 @@ class SlaveSchedulerThread(threading.Thread):
         super(SlaveSchedulerThread, self).__init__()
         self._scheduler = scheduler
         self._stop_event = threading.Event()
-        self._animations = []
+        self._animations = {}
    
-    def add_animation(self, start_time, frames, repeat):
-        self._animations.append([start_time, frames, repeat])
+    def add_animation(self, header, start_time, frames, repeat):
+        if header not in list(self._animations):
+            self._animations[header] = [start_time, frames, repeat]
 
     def stop(self):
         self._stop_event.set()
@@ -48,7 +49,8 @@ class SlaveSchedulerThread(threading.Thread):
                 break
 
             if len(self._animations) > 0:
-                animation = self._animations[0]
+                first_animation = list(self._animations)[0]
+                animation = self._animations[first_animation]
 
                 logger.debug("Starting item at:{0}".format(animation[0]))
                 now = self._scheduler.time()
@@ -61,11 +63,13 @@ class SlaveSchedulerThread(threading.Thread):
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
 
+                print(animation[2])
+
                 if not animation[2]:
-                    self._animations.pop(0)
+                    self._animations.pop(first_animation)
                 else:
                     if len(self._animations) > 1:
-                        self._animations.pop(0)
+                        self._animations.pop(first_animation)
 
 class Scheduler(object):
     START_DELAY = 2
@@ -88,7 +92,7 @@ class Scheduler(object):
 
         now = time.time()
         start_time = now + Scheduler.START_DELAY
-        masterdb.write_start(0, hash(task), start_time)
+        masterdb.write_start(0, hash(task), start_time, task.get_sticky())
 
         logger.debug("Starting item at:{0}".format(start_time))
 

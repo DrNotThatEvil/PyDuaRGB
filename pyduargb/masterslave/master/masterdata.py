@@ -116,8 +116,8 @@ class MasterData(Singleton):
     def write_remote_frames(self, index, hsh, slave_frames):
         self._continue_slavedata[index].add_frames(hsh, slave_frames)
 
-    def write_start(self, index, hsh, time):
-        self._continue_slavedata[index].add_start(hsh, time)
+    def write_start(self, index, hsh, time, repeat):
+        self._continue_slavedata[index].add_start(hsh, time, repeat)
 
     def write_remote_leds(self, leds):
         # Write the remote leds.
