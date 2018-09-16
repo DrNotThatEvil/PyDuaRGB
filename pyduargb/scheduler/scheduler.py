@@ -63,8 +63,6 @@ class SlaveSchedulerThread(threading.Thread):
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
 
-                print(animation[2])
-
                 if not animation[2]:
                     self._animations.pop(first_animation)
                 else:
@@ -72,10 +70,11 @@ class SlaveSchedulerThread(threading.Thread):
                         self._animations.pop(first_animation)
 
 class Scheduler(object):
-    START_DELAY = 2
+    START_DELAY = 5
 
     def __init__(self):
         self._offset = 0
+        self._last_sticky = None
  
     def set_offset(self, offset):
         self._offset = offset
@@ -88,8 +87,15 @@ class Scheduler(object):
         # Send start time to slaves
         # Start the animation.
 
+        rgbcontrol = rgbcontroller.RGBController()
         frames = task.get_translated_frames()
-
+        if task.get_sticky() and task == self._last_sticky:
+            for frame in frames:
+                rgbcontrol.display_frame(tuple(frame))
+            return
+        elif task.get_sticky() and not task == self._last_sticky:
+            self._last_sticky = task
+        
         now = time.time()
         start_time = now + Scheduler.START_DELAY
         masterdb.write_start(0, hash(task), start_time, task.get_sticky())
@@ -101,7 +107,6 @@ class Scheduler(object):
             now = time.time()
        
         logger.debug("Starting item...")
-        rgbcontrol = rgbcontroller.RGBController()
 
         # Start the animation. 
         for frame in frames:

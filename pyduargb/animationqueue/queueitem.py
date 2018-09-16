@@ -102,8 +102,8 @@ class QueueItem(object):
 
         # TODO: Write a real implementation for this cause.. you know it's just a test
         masterdb.write_remote_frames(0, hash(self), self.pixels)
-        
-        while masterdb.get_total_unsend_length(hash(self)) > 0:
+       
+        while (masterdb.get_total_unsend_length(hash(self)) > 0):
             time.sleep(1)
 
         self.ready = True
