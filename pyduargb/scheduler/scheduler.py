@@ -62,7 +62,7 @@ class SlaveSchedulerThread(threading.Thread):
                 
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
-                    time.sleep(0.05)
+                    time.sleep(0.005)
 
                 if not animation[2]:
                     self._animations.pop(first_animation)
@@ -93,7 +93,7 @@ class Scheduler(object):
         if task.get_sticky() and task == self._last_sticky:
             for frame in frames:
                 rgbcontrol.display_frame(tuple(frame))
-                time.sleep(0.05)
+                time.sleep(0.005)
             return
         elif task.get_sticky() and not task == self._last_sticky:
             self._last_sticky = task
