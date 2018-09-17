@@ -63,7 +63,7 @@ class SlaveSchedulerThread(threading.Thread):
                 for frame in animation[1]:
                     rgbcontrol.display_frame(tuple(frame))
                     now = self._scheduler.time()
-                    frame_time = now + 0.05
+                    frame_time = now + 0.005
                     while now < frame_time:
                         now = self._scheduler.time()
 
@@ -97,7 +97,7 @@ class Scheduler(object):
             for frame in frames:
                 rgbcontrol.display_frame(tuple(frame))
                 now = time.time()
-                frame_time = now + 0.05
+                frame_time = now + 0.005
                 while now < frame_time:
                     now = time.time()
 
@@ -123,7 +123,7 @@ class Scheduler(object):
         for frame in frames:
             rgbcontrol.display_frame(tuple(frame))
             now = time.time()
-            frame_time = now + 0.05
+            frame_time = now + 0.005
             while now < frame_time:
                 now = time.time()
 
