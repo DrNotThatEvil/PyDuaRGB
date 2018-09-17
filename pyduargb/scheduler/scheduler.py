@@ -97,7 +97,7 @@ class Scheduler(object):
             for frame in frames:
                 rgbcontrol.display_frame(tuple(frame))
                 now = time.time()
-                frame_time = now + 1
+                frame_time = now + 0.1
                 while now < frame_time:
                     now = time.time()
 
@@ -123,7 +123,7 @@ class Scheduler(object):
         for frame in frames:
             rgbcontrol.display_frame(tuple(frame))
             now = time.time()
-            frame_time = now + 1
+            frame_time = now + 0.1
             while now < frame_time:
                 now = time.time()
 
