@@ -44,9 +44,12 @@ class SlaveData():
         self._led_queue.append(leds)
 
     def get_unsend_length(self, hsh):
-        if hsh not in self._frames_queue:
+        try:
+            if hsh not in list(self._frames_queue):
+                return 0
+            return len(self._frames_queue[hsh])
+        except KeyError:
             return 0
-        return len(self._frames_queue[hsh])
 
     def pop_start(self):
         send_data = bytearray(0) 
@@ -112,6 +115,9 @@ class MasterData(Singleton):
             sops = sd.get_data()
             if sops['mode'] == 'continue':
                 self._added_leds = self._added_leds + sops['leds']
+
+    def get_slave_leds(self, index):
+        return self._continue_slavedata[index].get_data()['leds']
 
     def write_remote_frames(self, index, hsh, slave_frames):
         self._continue_slavedata[index].add_frames(hsh, slave_frames)

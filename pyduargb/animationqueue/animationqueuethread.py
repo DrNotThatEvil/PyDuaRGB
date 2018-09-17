@@ -17,7 +17,7 @@
 import threading
 
 from .animationqueue import AnimationQueue
-from time import sleep
+import time
 
 
 class AnimationComputeThread(threading.Thread):
@@ -46,6 +46,8 @@ class AnimationQueueThread(threading.Thread):
         self.animation_lock = animation_lock
         self._stop_event = threading.Event()
         self._calc_threads = []
+        self.LAST_TIME = time.time()
+        self.LAST_DIFF = 0
 
     def stop(self):
         self._stop_event.set()
@@ -76,10 +78,14 @@ class AnimationQueueThread(threading.Thread):
                 
             if not self.animation_lock.acquire(blocking=False):
                 continue
-    
+ 
+            now = time.time()
+            diff = now - self.LAST_TIME
+            # print("diff: {2}".format(self.LAST_TIME, now, diff))
             if queue.perform_task():
                 queue.item_done()
+            self.LAST_TIME = now
 
-            sleep(0.001)
+            # sleep(0.001)
 
             self.animation_lock.release()

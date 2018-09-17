@@ -82,11 +82,14 @@ class QueueItem(object):
         if self.ready or self.being_computed:
             return
 
+        
+        added_leds = masterdb.get_added_leds()
+
         self.being_computed = True
         pixels = []
         translated_pixels = []
         for i in range(self.duration):
-            local_pixels = list(self.animation.animate_ns(i, self.duration, self._ledcount))
+            local_pixels = list(self.animation.animate_ns(i, self.duration, self._ledcount + added_leds))
             local_trans = local_pixels.copy()
             pixels.append(local_pixels)
 
@@ -100,11 +103,22 @@ class QueueItem(object):
         self.translated_pixels = translated_pixels
         self.pixels = pixels
 
-        # TODO: Write a real implementation for this cause.. you know it's just a test
-        masterdb.write_remote_frames(0, hash(self), self.pixels)
+        remote_pixels = []
+        for x in self.pixels:
+            remote_pixels.append(x[:self._ledcount]) 
+
+        self.pixels = [x[0:self._ledcount] for x in self.pixels]
+        self.translated_pixels = [x[0:self._ledcount] for x in self.translated_pixels]
+
+        offset = 0
+        for x in range(masterdb.get_last_index()):
+            slave_leds = masterdb.get_slave_leds(x)
+            masterdb.write_remote_frames(x, hash(self), remote_pixels[offset:slave_leds])
+            offset = offset + slave_leds
        
         while (masterdb.get_total_unsend_length(hash(self)) > 0):
-            time.sleep(1)
+            if masterdb.get_total_unsend_length(hash(self)) == 0:
+                break
 
         self.ready = True
 

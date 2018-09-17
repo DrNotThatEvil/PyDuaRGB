@@ -45,6 +45,7 @@ class RGBController(Singleton):
     def display_frame(self, frame):
         if isinstance(frame, list): 
             frame = tuple([Pixel({'r': x[0], 'g':x[1], 'b':x[2]}) for x in frame])
+            print("Test")
         
         self.chip.write_pixels(frame, self.ledcount, self.spidev)
 
