@@ -103,19 +103,16 @@ class QueueItem(object):
         self.translated_pixels = translated_pixels
         self.pixels = pixels
 
-        remote_pixels = []
-        for x in self.pixels:
-            remote_pixels.append(x[self._ledcount:]) 
-
-        self.pixels = [x[0:self._ledcount] for x in self.pixels]
-        self.translated_pixels = [x[0:self._ledcount] for x in self.translated_pixels]
-
         offset = 0
         for x in range(masterdb.get_last_index()):
             slave_leds = masterdb.get_slave_leds(x)
-            masterdb.write_remote_frames(x, hash(self), remote_pixels[offset:slave_leds])
+            remote_frames = [frame[offset:slave_leds] for frame in self.pixels]
+            masterdb.write_remote_frames(x, hash(self), remote_frames)
             offset = offset + slave_leds
        
+        self.pixels = [x[0:self._ledcount] for x in self.pixels]
+        self.translated_pixels = [x[0:self._ledcount] for x in self.translated_pixels]
+
         while (masterdb.get_total_unsend_length(hash(self)) > 0):
             if masterdb.get_total_unsend_length(hash(self)) == 0:
                 break
