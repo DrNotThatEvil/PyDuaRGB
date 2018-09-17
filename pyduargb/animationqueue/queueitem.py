@@ -106,7 +106,7 @@ class QueueItem(object):
         offset = 0
         for x in range(masterdb.get_last_index()):
             slave_leds = masterdb.get_slave_leds(x)
-            remote_frames = [frame[offset:slave_leds] for frame in self.pixels]
+            remote_frames = [frame[(slave_leds+offset):((slave_leds*2)+offset)] for frame in self.pixels]
             masterdb.write_remote_frames(x, hash(self), remote_frames)
             offset = offset + slave_leds
        
