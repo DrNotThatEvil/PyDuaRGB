@@ -105,7 +105,7 @@ class QueueItem(object):
 
         remote_pixels = []
         for x in self.pixels:
-            remote_pixels.append(x[:self._ledcount]) 
+            remote_pixels.append(x[self._ledcount:]) 
 
         self.pixels = [x[0:self._ledcount] for x in self.pixels]
         self.translated_pixels = [x[0:self._ledcount] for x in self.translated_pixels]
